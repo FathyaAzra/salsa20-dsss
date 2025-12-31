@@ -1,0 +1,21 @@
+<h2>Decrypt Image (Crypto-Stegano)</h2>
+
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <label>Encrypted BIN:</label>
+    <input type="file" name="cipher" required><br><br>
+
+    <label>Metadata TXT:</label>
+    <input type="file" name="metadata" required><br><br>
+
+    <label>Key TXT:</label>
+    <input type="file" name="key" required><br><br>
+
+    <button type="submit">Decrypt</button>
+</form>
+
+{% if decrypted %}
+    <h3>Decrypted Image</h3>
+    <img src="{{ decrypted }}" width="300">
+    <a href="{{ decrypted }}" download>Download</a>
+{% endif %}

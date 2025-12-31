@@ -1,0 +1,16 @@
+<h2>Encrypt Image using Salsa20 (Crypto-Stegano)</h2>
+
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <label>Select Image:</label>
+    <input type="file" name="image" required><br><br>
+    <button type="submit">Encrypt</button>
+</form>
+
+{% if encrypted %}
+  <h3>Download Encrypted Binary</h3>
+  <a href="{{ encrypted }}" download>Encrypted BIN</a><br><br>
+
+  <h3>Download Metadata</h3>
+  <a href="{{ metadata }}" download>Metadata TXT</a>
+{% endif %}

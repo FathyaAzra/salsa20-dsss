@@ -1,0 +1,10 @@
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="file" name="files" multiple><br>
+    <input type="text" name="password">
+    <button type="submit">Decode</button>
+</form>
+
+{% if file %}
+<a href="{{ file }}" download>Download Recovered File</a>
+{% endif %}

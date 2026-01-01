@@ -1,27 +1,26 @@
-<form id="uploadForm" method="POST" enctype="multipart/form-data">
+<h2>Step 2: Encode (DSSS Steganography)</h2>
+
+<form method="POST" enctype="multipart/form-data">
     {% csrf_token %}
 
-    <div>
-        <label for="audio">Audio File:</label><br>
-        <input type="file" name="audio" id="audio" required>
-    </div><br>
+    <label>Carrier Audio (WAV):</label><br>
+    <input type="file" name="audio" required><br><br>
 
-    <div>
-        <label for="secret_file">Secret File:</label><br>
-        <input type="file" name="secret_file" id="secret_file" required>
-    </div><br>
+    <label>Secret File (Encrypted BIN):</label><br>
+    <input type="file" name="secret_file" required><br><br>
 
-    <div>
-        <label for="password">Password:</label><br>
-        <input type="text" name="password" id="password" placeholder="password">
-    </div><br>
+    <label>Password:</label><br>
+    <input type="text" name="password" placeholder="password"><br><br>
 
     <button type="submit">Encode</button>
 </form>
 
-{% if files %}
-    <h3>Download Stego Audio Files:</h3>
-    {% for f in files %}
-        <a href="{{ f }}" download>{{ f }}</a><br>
-    {% endfor %}
+{% if file %}
+<hr>
+<h3>Output</h3>
+<a href="{{ file }}" download>Download Stego</a><br><br>
+
+<a href="{% url 'decode' %}">
+    <button>➡ Go to Decode</button>
+</a>
 {% endif %}

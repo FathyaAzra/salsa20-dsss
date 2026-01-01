@@ -1,21 +1,19 @@
-<h2>Decrypt Image (Crypto-Stegano)</h2>
+<h2>Step 4: Decrypt File (Salsa20)</h2>
 
 <form method="POST" enctype="multipart/form-data">
     {% csrf_token %}
-    <label>Encrypted BIN:</label>
+
+    <label>Recovered BIN:</label><br>
     <input type="file" name="cipher" required><br><br>
 
-    <label>Metadata TXT:</label>
-    <input type="file" name="metadata" required><br><br>
-
-    <label>Key TXT:</label>
+    <label>Key File:</label><br>
     <input type="file" name="key" required><br><br>
 
     <button type="submit">Decrypt</button>
 </form>
 
-{% if decrypted %}
-    <h3>Decrypted Image</h3>
-    <img src="{{ decrypted }}" width="300">
-    <a href="{{ decrypted }}" download>Download</a>
+{% if recovered %}
+<hr>
+<h3>Recovered File</h3>
+<a href="{{ recovered }}" download>Download Original File</a>
 {% endif %}

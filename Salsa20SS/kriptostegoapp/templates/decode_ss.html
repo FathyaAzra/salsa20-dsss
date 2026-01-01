@@ -1,10 +1,23 @@
+<h2>Step 3: Decode (DSSS Extraction)</h2>
+
 <form method="POST" enctype="multipart/form-data">
     {% csrf_token %}
-    <input type="file" name="files" multiple><br>
-    <input type="text" name="password">
+
+    <label>Stego Audio (WAV):</label><br>
+    <input type="file" name="audio" required><br><br>
+
+    <label>Password:</label><br>
+    <input type="text" name="password" placeholder="password"><br><br>
+
     <button type="submit">Decode</button>
 </form>
 
 {% if file %}
-<a href="{{ file }}" download>Download Recovered File</a>
+<hr>
+<h3>Output</h3>
+<a href="{{ file }}" download>Download Recovered BIN</a><br><br>
+
+<a href="{% url 'decrypt' %}">
+    <button>➡ Go to Decrypt</button>
+</a>
 {% endif %}

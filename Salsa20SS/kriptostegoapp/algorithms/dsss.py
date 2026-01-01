@@ -2,81 +2,141 @@ import numpy as np
 import soundfile as sf
 from django.core.cache import cache
 
-
-def dsss_enc_split(signal: np.ndarray, secret_bits: list[int], password: str = "secret", L_min: int = 8 * 1024, alpha: float = 0.005, prefix: str = "stego", samplerate: int = 44100):
-
-    samples, _ = signal.shape
-    total_bits = len(secret_bits)
-
-    L2 = samples // total_bits if total_bits > 0 else 0
-    L = max(L_min, L2)
-
-    nframe = samples // L
-    capacity_bits = nframe - (nframe % 8)
-
-    chunks = [secret_bits[i:i + capacity_bits] for i in range(0, total_bits, capacity_bits)]
-    spreading_seq = prng(password, L)
-
-    outputs = []
-    total = len(chunks)
-
-    for idx, chunk in enumerate(chunks):
-        cache.set("encode_progress", int((idx + 1) / total * 100))
-
-        stego = embed_bits(signal, chunk, spreading_seq, alpha, L)
-        filename = f"{prefix}_{idx + 1:04d}.wav"
-        sf.write(filename, stego, samplerate)
-        outputs.append(filename)
-
-    cache.set("encode_progress", 100)
-    return outputs
+def prng(key: str, L: int) -> np.ndarray:
+    seed = sum((i + 1) * ord(c) for i, c in enumerate(key))
+    rng = np.random.default_rng(seed)
+    return rng.choice([-1.0, 1.0], size=L).astype(np.float32)
 
 
-def dsss_dec_split(files: list, password: str = "secret", L_min: int = 8 * 1024) -> bytes:
-    bitstream = ""
-
-    for path in files:
-        signal, _ = sf.read(path)
-        samples = signal.shape[0]
-
-        L = L_min
-        nframe = samples // L
-        N = nframe - (nframe % 8)
-
-        xsig = np.reshape(signal[:N * L, 0], (L, N), order="F")
-        spreading_seq = prng(password, L)
-
-        corr = np.sum(xsig * spreading_seq[:, None], axis=0) / L
-        bitstream += ''.join('1' if c >= 0 else '0' for c in corr)
-
-    return bits_to_bytes(bitstream)
+def bytes_to_bits(data: bytes, repeat: int = 1) -> np.ndarray:
+    bits = np.unpackbits(np.frombuffer(data, dtype=np.uint8))
+    return np.repeat(bits, repeat).astype(np.uint8)
 
 
-def bytes_to_bits(data: bytes) -> list[int]:
-    return [int(bit) for byte in data for bit in format(byte, "08b")]
+def bits_to_bytes(bits: np.ndarray) -> bytes:
+    n = len(bits) - (len(bits) % 8)
+    return np.packbits(bits[:n]).tobytes()
 
 
-def bits_to_bytes(bitstream: str) -> bytes:
-    return bytes(int(bitstream[i:i + 8], 2)
-        for i in range(0, len(bitstream), 8))
+def majority_vote(bits: np.ndarray, repeat: int) -> np.ndarray:
+    bits = bits.astype(np.uint8)
+    return np.array(
+        [
+            1 if np.sum(bits[i:i + repeat]) > repeat // 2 else 0
+            for i in range(0, len(bits), repeat)
+        ],
+        dtype=np.uint8,
+    )
+
+def file_to_bytes(path: str) -> bytes:
+    return np.fromfile(path, dtype=np.uint8).tobytes()
 
 
-def embed_bits(signal: np.ndarray, bits: list[int], spreading_seq, alpha: float, L: int):
-    stego = signal.copy()
-    samples = signal.shape[0]
+def dsss_encode(
+    in_audio: str,
+    out_audio: str,
+    payload_bytes: bytes,
+    alpha: float,
+    L: int,
+    key: str,
+    repeat: int,
+):
+    pn = prng(key, L)
 
-    for i, bit in enumerate(bits):
-        start = i * L
-        end = start + L
-        if end > samples:
-            break
-        chip = spreading_seq if bit == 1 else -spreading_seq
-        stego[start:end, 0] += alpha * chip
+    header = len(payload_bytes).to_bytes(4, "big") + b"\x01"
+    payload = header + payload_bytes
+    payload_bits = bytes_to_bits(payload, repeat)
 
-    return stego
+    with sf.SoundFile(in_audio) as infile:
+        channels = infile.channels
+        total_samples = infile.frames
+        total_blocks = int(np.ceil(total_samples / L))
+
+    required_blocks = len(payload_bits)
+
+    print(f"Payload bytes : {len(payload)}")
+    print(f"Required blocks : {required_blocks}")
+    print(f"Available blocks : {total_blocks}")
+
+    with sf.SoundFile(in_audio) as infile, sf.SoundFile(
+        out_audio,
+        mode="w",
+        samplerate=infile.samplerate,
+        channels=infile.channels,
+        format="FLAC",
+    ) as outfile:
+        for bit in payload_bits:
+            block = infile.read(L, dtype="float32")
+
+            if len(block) < L:
+                noise = np.random.normal(
+                    0.0, 1e-6, size=(L - len(block), channels)
+                ).astype(np.float32)
+                block = np.vstack((block, noise))
+
+            symbol = 1.0 if bit else -1.0
+            block[:, 0] += alpha * symbol * pn
+
+            outfile.write(block)
+
+        while True:
+            rest = infile.read(4096, dtype="float32")
+            if len(rest) == 0:
+                break
+            outfile.write(rest)
 
 
-def prng(password: str, L: int):
-    seed = sum(ord(ch) * i for i, ch in enumerate(password, start=1))
-    rng = np.random.RandomState(seed)
-    return np.where(rng.rand(L) > 0.5, 1, -1)
+def dsss_decode(
+    stego_audio: str,
+    out_file: str,
+    L: int,
+    key: str,
+    repeat: int,
+):
+    pn = prng(key, L)
+
+    HEADER_BYTES = 5
+    HEADER_BITS = HEADER_BYTES * 8
+    HEADER_BITS_REP = HEADER_BITS * repeat
+
+    bits = []
+    payload_bits_needed = None
+    payload_len = 0
+
+    with sf.SoundFile(stego_audio) as infile:
+        for block in infile.blocks(blocksize=L, dtype="float32"):
+
+            if block.ndim == 2:
+                block = block[:, 0]
+
+            if len(block) < L:
+                block = np.pad(block, (0, L - len(block)))
+
+            corr = np.dot(block, pn) / L
+            bits.append(1 if corr > 0 else 0)
+
+            if payload_bits_needed is None and len(bits) == HEADER_BITS_REP:
+                header_bits = majority_vote(np.array(bits), repeat)
+                header = bits_to_bytes(header_bits)
+
+                payload_len = int.from_bytes(header[:4], "big")
+                payload_bits_needed = payload_len * 8 * repeat
+
+                if payload_len <= 0:
+                    raise ValueError("Invalid payload length")
+
+            if (
+                payload_bits_needed is not None
+                and len(bits) >= HEADER_BITS_REP + payload_bits_needed
+            ):
+                break
+
+    payload_bits = np.array(
+        bits[HEADER_BITS_REP: HEADER_BITS_REP + payload_bits_needed]
+    )
+    payload = bits_to_bytes(majority_vote(payload_bits, repeat))
+
+    with open(out_file, "wb") as f:
+        f.write(payload)
+
+    return payload_len, len(payload)

@@ -71,24 +71,23 @@ def stegano_encode(request):
 
         alpha = float(request.POST.get("alpha", 0.01))
         L = int(request.POST.get("L", 512))
-        repeat = int(request.POST.get("repeat", 3))
+        repeat_n = int(request.POST.get("repeat", 3))
 
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as in_audio:
             in_audio.write(audio_file.read())
             in_audio_path = in_audio.name
 
         secret_bytes = secret_file.read()
-
         out_audio_path = in_audio_path.replace(".wav", "_stego.flac")
 
         dsss_encode(
             in_audio=in_audio_path,
             out_audio=out_audio_path,
-            payload_bytes=secret_bytes,
+            payload=secret_bytes,
+            key=password,
             alpha=alpha,
             L=L,
-            key=password,
-            repeat=repeat,
+            repeat_n=repeat_n,
         )
 
         dst = "stego/encoded.flac"
@@ -118,7 +117,7 @@ def stegano_decode(request):
         password = request.POST.get("password", "secret")
 
         L = int(request.POST.get("L", 512))
-        repeat = int(request.POST.get("repeat", 3))
+        repeat_n = int(request.POST.get("repeat", 3))
 
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as in_audio:
             in_audio.write(stego_audio.read())
@@ -126,12 +125,12 @@ def stegano_decode(request):
 
         out_path = stego_path.replace(".wav", "_decoded.bin")
 
-        payload_len, recovered_len = dsss_decode(
+        dsss_decode(
             stego_audio=stego_path,
             out_file=out_path,
-            L=L,
             key=password,
-            repeat=repeat,
+            L=L,
+            repeat_n=repeat_n,
         )
 
         dst = "stego/recovered.bin"

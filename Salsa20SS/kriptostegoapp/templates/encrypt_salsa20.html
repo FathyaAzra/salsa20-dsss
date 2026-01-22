@@ -1,19 +1,121 @@
-<h2>Step 1: Encrypt File (Salsa20)</h2>
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<title>Enkripsi Salsa20</title>
+    <meta charset="UTF-8">
+    <title>Enkripsi Salsa20</title>
+    <link rel="stylesheet" href="{% static 'interface.css' %}">
+</head>
+<body>
 
-<form method="POST" enctype="multipart/form-data">
-    {% csrf_token %}
-    <label>Select File:</label><br>
-    <input type="file" name="file" required><br><br>
-    <button type="submit">Encrypt</button>
-</form>
+<nav class="navbar">
+    <div class="brand">CryptoApp</div>
+    <ul>
+        <li><a href="#">Home</a></li>
+        <li><a href="#">Enkripsi</a></li>
+        <li><a href="#">Penyisipan</a></li>
+        <li><a href="#">Tentang</a></li>
+    </ul>
+</nav>
 
-{% if encrypted %}
-<hr>
-<h3>Output</h3>
-<a href="{{ encrypted }}" download>Download Encrypted BIN</a><br>
-<a href="{{ key }}" download>Download Key</a><br><br>
+<div class="container">
+    <h1>Enkripsi File – Salsa20</h1>
 
-<a href="{% url 'encode' %}">
-    <button>Next : Encode</button>
-</a>
-{% endif %}
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="main">
+            <div>
+                <div class="upload-box" id="dropZone">
+                    <div class="icon">⬆</div>
+                    <strong>Click or Drag file</strong>
+                    <span style="font-size:13px;color:#777">Unggah ilustrasi digital</span>
+                    <input type="file" id="fileInput" name="file" accept="image/*" required hidden>
+                </div>
+                <div class="format">Format: PNG, JPG, JPEG</div>
+            </div>
+
+            <div>
+                <div class="preview" id="preview">
+                    <span style="color:#777">Preview gambar</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button type="submit" class="btn primary">Mulai Enkripsi</button>
+            <div class="progress">Progres : 0%</div>
+        </div>
+
+        {% if encrypted %}
+        <div class="downloads">
+            <a href="{{ encrypted }}" download class="btn">Download Cipher</a>
+            <a href="{{ key }}" download class="btn">Download Kunci</a>
+            <a href="{{ metadata }}" download class="btn">Download Metadata</a>
+        </div>
+
+        <div class="details">
+            <strong>Detail Proses</strong><br>
+            Pesan asli : {{ filename }}<br>
+            Ukuran : {{ filesize }}<br><br>
+            Pesan cipher : encrypted.bin<br>
+            Kecepatan proses : {{ speed }}<br>
+            Status : Terenkripsi 100%
+        </div>
+
+        <div class="next">
+            <a href="{% url 'encode' %}">
+                <button type="button" class="btn primary">Tahap Berikutnya →</button>
+            </a>
+        </div>
+        {% endif %}
+    </form>
+</div>
+
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const preview = document.getElementById('preview');
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.style.background = '#e8eafc';
+    dropZone.style.borderColor = '#4f46e5';
+});
+dropZone.addEventListener('dragleave', () => {
+    dropZone.style.background = '#fafafa';
+    dropZone.style.borderColor = '#999';
+});
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.style.background = '#fafafa';
+    dropZone.style.borderColor = '#999';
+
+    const files = e.dataTransfer.files;
+    if (files.length) {
+        fileInput.files = files;
+        showPreview(files[0]);
+    }
+});
+fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) {
+        showPreview(fileInput.files[0]);
+    }
+});
+
+function showPreview(file) {
+    if (!file.type.startsWith('image/')) return;
+
+    preview.innerHTML = '';
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(file);
+    img.onload = () => URL.revokeObjectURL(img.src);
+    preview.appendChild(img);
+}
+</script>
+
+</body>
+</html>

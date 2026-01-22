@@ -76,10 +76,7 @@ def dsss_decode(
             if payload_len is None and len(bits) >= 32 * repeat_n:
                 hdr_bits = np.array(bits[: 32 * repeat_n], dtype=np.uint8)
                 hdr_bits = hdr_bits[: len(hdr_bits) - (len(hdr_bits) % repeat_n)]
-                hdr = (
-                    hdr_bits.reshape(-1, repeat_n).sum(axis=1)
-                    > (repeat_n // 2)
-                ).astype(np.uint8)
+                hdr = (hdr_bits.reshape(-1, repeat_n).sum(axis=1) > (repeat_n // 2)).astype(np.uint8)
                 payload_len = int.from_bytes(np.packbits(hdr).tobytes(), "big")
 
             if payload_len is not None:
@@ -89,10 +86,7 @@ def dsss_decode(
 
     payload_bits = np.array(bits[32 * repeat_n :], dtype=np.uint8)
     payload_bits = payload_bits[: len(payload_bits) - (len(payload_bits) % repeat_n)]
-    data_bits = (
-        payload_bits.reshape(-1, repeat_n).sum(axis=1)
-        > (repeat_n // 2)
-    ).astype(np.uint8)
+    data_bits = (payload_bits.reshape(-1, repeat_n).sum(axis=1)> (repeat_n // 2)).astype(np.uint8)
 
     payload = np.packbits(data_bits).tobytes()[:payload_len]
 

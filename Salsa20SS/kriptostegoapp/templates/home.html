@@ -1,0 +1,36 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Beranda</title>
+    <link rel="stylesheet" href="{% static 'interface.css' %}">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="brand">CryptoApp</div>
+    <ul>
+        <li><a href="{% url 'home' %}">Beranda</a></li>
+        <li><a href="#">Tata cara</a></li>
+    </ul>
+</nav>
+
+<div class="container home">
+    <div class="home-title">
+        <h1>
+            Integrasi Algoritma Kriptografi Salsa20 dan
+            Steganografi Spread Spectrum Audio untuk
+            Pengamanan Ilustrasi Digital
+        </h1>
+    </div>
+
+    <div class="home-actions">
+        <div class="action-buttons">
+            <a href="{% url 'encrypt' %}" class="btn big">Pengirim</a>
+            <a href="{% url 'decode' %}" class="btn big">Penerima</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

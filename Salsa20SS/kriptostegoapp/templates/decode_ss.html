@@ -1,23 +1,115 @@
-<h2>Step 3: Decode (DSSS Extraction)</h2>
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Ekstraksi DSSS</title>
+    <link rel="stylesheet" href="{% static 'interface.css' %}">
+</head>
+<body>
 
-<form method="POST" enctype="multipart/form-data">
-    {% csrf_token %}
+<nav class="navbar">
+    <div class="brand">CryptoApp</div>
+    <ul>
+        <li><a href="{% url 'home' %}">Beranda</a></li>
+        <li><a href="{% url 'decode' %}" class="active">Ekstraksi</a></li>
+        <li><a href="{% url 'decrypt' %}">Dekripsi</a></li>
+    </ul>
+</nav>
 
-    <label>Stego Audio (WAV):</label><br>
-    <input type="file" name="audio" required><br><br>
+<div class="container">
+    <h1>Ekstraksi DSSS</h1>
 
-    <label>Password:</label><br>
-    <input type="text" name="password" placeholder="password"><br><br>
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
 
-    <button type="submit">Decode</button>
-</form>
+        <div class="main">
+            <div class="left-panel">
+                <div class="upload-box" id="audioDropZone">
+                    <strong>Click or Drag</strong>
+                    <span>Unggah stego</span>
+                    <input type="file"
+                        id="audioInput"
+                        name="audio_file"
+                        accept=".wav,.flac"
+                        hidden required>
+                </div>
 
-{% if file %}
-<hr>
-<h3>Output</h3>
-<a href="{{ file }}" download>Download Recovered BIN</a><br><br>
+                <div class="format">Format: WAV / FLAC</div>
 
-<a href="{% url 'decrypt' %}">
-    <button>➡ Go to Decrypt</button>
-</a>
-{% endif %}
+                <div class="field" style="margin-top:20px">
+                    <label>Password :</label><br>
+                    <input type="password"
+                           name="password"
+                           placeholder="Password">
+                </div>
+
+                <div class="controls">
+                    <button type="submit" class="btn primary" id="decodeBtn">
+                        Mulai Decode
+                    </button>
+                    <span class="progress">Progres : 0%</span>
+                </div>
+
+                {% if file %}
+                <div class="downloads">
+                    <a href="{{ file }}" download class="btn">
+                        Download Recovered BIN
+                    </a>
+                    <a href="{% url 'decrypt' %}" class="btn primary">
+                        Lanjut Dekripsi
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="right-panel">
+                {% if file %}
+                <div class="result-area">
+                    <div class="details">
+                        <p>Status : <b>Ekstraksi berhasil</b></p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="actions" style="margin-top:30px">
+            <a href="{% url 'home' %}" class="btn">Kembali ke Beranda</a>
+        </div>
+    </form>
+</div>
+
+<script>
+const audioDropZone = document.getElementById('audioDropZone');
+const audioInput = document.getElementById('audioInput');
+
+audioDropZone.onclick = () => audioInput.click();
+
+audioDropZone.ondragover = e => {
+    e.preventDefault();
+    audioDropZone.classList.add('drag');
+};
+
+audioDropZone.ondragleave = () => {
+    audioDropZone.classList.remove('drag');
+};
+
+audioDropZone.ondrop = e => {
+    e.preventDefault();
+    audioDropZone.classList.remove('drag');
+
+    const file = e.dataTransfer.files[0];
+    const ext = file.name.toLowerCase();
+
+    if (!ext.endsWith('.wav') && !ext.endsWith('.flac')) {
+        alert('File harus berformat WAV atau FLAC!');
+        return;
+    }
+
+    audioInput.files = e.dataTransfer.files;
+};
+</script>
+
+</body>
+</html>

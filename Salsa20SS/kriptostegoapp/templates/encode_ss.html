@@ -1,26 +1,131 @@
-<h2>Step 2: Encode (DSSS Steganography)</h2>
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Penyisipan DSSS</title>
+    <link rel="stylesheet" href="{% static 'interface.css' %}">
+</head>
+<body>
 
-<form method="POST" enctype="multipart/form-data">
-    {% csrf_token %}
+<nav class="navbar">
+    <div class="brand">CryptoApp</div>
+    <ul>
+        <li><a href="{% url 'home' %}">Beranda</a></li>
+        <li><a href="{% url 'encrypt' %}">Enkripsi</a></li>
+        <li><a href="{% url 'encode' %}" class="active">Penyisipan</a></li>
+    </ul>
+</nav>
 
-    <label>Carrier Audio (WAV):</label><br>
-    <input type="file" name="audio" required><br><br>
+<div class="container">
+    <h1>Penyisipan DSSS</h1>
 
-    <label>Secret File (Encrypted BIN):</label><br>
-    <input type="file" name="secret_file" required><br><br>
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="main">
+            <div class="left-panel">
+                <div class="upload-box" id="dropZone">
+                    <strong>Click or Drag file</strong>
+                    <span>Unggah file cipher (.bin)</span>
+                    <input type="file" id="fileInput" name="secret_file" accept=".bin" hidden required>
+                </div>
 
-    <label>Password:</label><br>
-    <input type="text" name="password" placeholder="password"><br><br>
+                <div class="format">Format: BIN</div>
 
-    <button type="submit">Encode</button>
-</form>
+                <div class="upload-box" id="audioDropZone" style="margin-top:20px">
+                    <strong>Click or Drag audio</strong>
+                    <span>Unggah file audio (.wav)</span>
+                    <input type="file" id="audioInput" name="audio_file" accept=".wav" hidden required>
+                </div>
 
-{% if file %}
-<hr>
-<h3>Output</h3>
-<a href="{{ file }}" download>Download Stego</a><br><br>
+                <div class="format">Format: WAV</div>
 
-<a href="{% url 'decode' %}">
-    <button>Go to Decode</button>
-</a>
-{% endif %}
+                <div class="field" style="margin-top:20px">
+                    <label>Password :</label><br>
+                    <input type="password" name="password" placeholder="Password">
+                </div>
+
+                <div class="controls">
+                    <button type="submit" class="btn primary">Mulai Penyisipan</button>
+                    <span class="progress">Progres : 0%</span>
+                </div>
+
+                {% if file %}
+                <div class="downloads">
+                    <a href="{{ file }}" download class="btn">
+                        Download Stego
+                    </a>
+                </div>
+                {% endif %}
+
+            </div>
+
+            <div class="right-panel">
+                {% if stego %}
+                <div class="result-area">
+                    <div class="details">
+                        <p>Nama pesan : {{ message_name }}</p>
+                        <p>Ukuran pesan : {{ message_size }}</p>
+                        <br>
+                        <p>Nama audio : {{ audio_name }}</p>
+                        <p>Bitrate : {{ bitrate }}</p>
+                        <p>Channel : {{ channel }}</p>
+                        <br>
+                        <p>Kapasitas : {{ capacity }}</p>
+                        <p>Kapasitas dibutuhkan : {{ required_capacity }}</p>
+                        <p>Padding : {{ padding }}</p>
+                        <br>
+                        <p>Status : <b>Penyisipan berhasil</b></p>
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const audioDropZone = document.getElementById('audioDropZone');
+const audioInput = document.getElementById('audioInput');
+
+dropZone.onclick = () => fileInput.click();
+dropZone.ondragover = e => {
+    e.preventDefault();
+    dropZone.classList.add('drag');
+};
+dropZone.ondragleave = () => dropZone.classList.remove('drag');
+dropZone.ondrop = e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag');
+    fileInput.files = e.dataTransfer.files;
+};
+audioDropZone.onclick = () => audioInput.click();
+
+audioDropZone.ondragover = e => {
+    e.preventDefault();
+    audioDropZone.classList.add('drag');
+};
+
+audioDropZone.ondragleave = () => audioDropZone.classList.remove('drag');
+
+audioDropZone.ondrop = e => {
+    e.preventDefault();
+    audioDropZone.classList.remove('drag');
+
+    const file = e.dataTransfer.files[0];
+
+    if (!file.name.toLowerCase().endsWith('.wav')) {
+        alert('File harus berformat WAV!');
+        return;
+    }
+
+    audioInput.files = e.dataTransfer.files;
+};
+</script>
+
+
+</body>
+</html>

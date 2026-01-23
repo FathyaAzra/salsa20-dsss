@@ -2,8 +2,6 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8" />
-<title>Enkripsi Salsa20</title>
     <meta charset="UTF-8">
     <title>Enkripsi Salsa20</title>
     <link rel="stylesheet" href="{% static 'interface.css' %}">
@@ -13,10 +11,9 @@
 <nav class="navbar">
     <div class="brand">CryptoApp</div>
     <ul>
-        <li><a href="#">Home</a></li>
-        <li><a href="#">Enkripsi</a></li>
-        <li><a href="#">Penyisipan</a></li>
-        <li><a href="#">Tentang</a></li>
+        <li><a href="{% url 'home' %}">Beranda</a></li>
+        <li><a href="{% url 'encrypt' %}" class="active">Enkripsi</a></li>
+        <li><a href="{% url 'encode' %}">Penyisipan</a></li>
     </ul>
 </nav>
 
@@ -27,50 +24,58 @@
         {% csrf_token %}
 
         <div class="main">
-            <div>
+
+            <div class="left-panel">
+
                 <div class="upload-box" id="dropZone">
-                    <div class="icon">⬆</div>
                     <strong>Click or Drag file</strong>
-                    <span style="font-size:13px;color:#777">Unggah ilustrasi digital</span>
-                    <input type="file" id="fileInput" name="file" accept="image/*" required hidden>
+                    <span>Unggah ilustrasi digital</span>
+                    <input type="file" id="fileInput" name="file" hidden required>
                 </div>
+
                 <div class="format">Format: PNG, JPG, JPEG</div>
-            </div>
 
-            <div>
-                <div class="preview" id="preview">
-                    <span style="color:#777">Preview gambar</span>
+                <div class="controls">
+                    <button type="submit" class="btn primary">Mulai Enkripsi</button>
+                    <span class="progress">Progres : 0%</span>
                 </div>
+
+                {% if encrypted %}
+                <div class="downloads">
+                    <a href="{{ encrypted }}" download class="btn">Download Cipher</a>
+                    <a href="{{ key }}" download class="btn">Download Kunci</a>
+                    <a href="{{ metadata }}" download class="btn">Download Metadata</a>
+                </div>
+                {% endif %}
+
             </div>
-        </div>
 
-        <div class="controls">
-            <button type="submit" class="btn primary">Mulai Enkripsi</button>
-            <div class="progress">Progres : 0%</div>
-        </div>
+            <div class="right-panel">
 
-        {% if encrypted %}
-        <div class="downloads">
-            <a href="{{ encrypted }}" download class="btn">Download Cipher</a>
-            <a href="{{ key }}" download class="btn">Download Kunci</a>
-            <a href="{{ metadata }}" download class="btn">Download Metadata</a>
-        </div>
+                <div class="preview" id="preview">
+                    <span>Preview gambar</span>
+                </div>
 
-        <div class="details">
-            <strong>Detail Proses</strong><br>
-            Pesan asli : {{ filename }}<br>
-            Ukuran : {{ filesize }}<br><br>
-            Pesan cipher : encrypted.bin<br>
-            Kecepatan proses : {{ speed }}<br>
-            Status : Terenkripsi 100%
-        </div>
+                {% if encrypted %}
+                <div class="result-area">
+                    <div class="details">
+                        <p>Pesan asli : {{ filename }}</p>
+                        <p>Ukuran : {{ filesize }}</p>
+                        <p>Kecepatan : {{ speed }}</p>
+                        <p>Status : <b>Terenkripsi 100%</b></p>
+                    </div>
 
-        <div class="next">
-            <a href="{% url 'encode' %}">
-                <button type="button" class="btn primary">Tahap Berikutnya →</button>
-            </a>
+                    <div class="next">
+                        <a href="{% url 'encode' %}" class="btn primary">
+                            Tahap Berikutnya →
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+
         </div>
-        {% endif %}
     </form>
 </div>
 
@@ -79,40 +84,29 @@ const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
 const preview = document.getElementById('preview');
 
-dropZone.addEventListener('click', () => fileInput.click());
-dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropZone.style.background = '#e8eafc';
-    dropZone.style.borderColor = '#4f46e5';
-});
-dropZone.addEventListener('dragleave', () => {
-    dropZone.style.background = '#fafafa';
-    dropZone.style.borderColor = '#999';
-});
-dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.style.background = '#fafafa';
-    dropZone.style.borderColor = '#999';
+dropZone.onclick = () => fileInput.click();
 
-    const files = e.dataTransfer.files;
-    if (files.length) {
-        fileInput.files = files;
-        showPreview(files[0]);
-    }
-});
-fileInput.addEventListener('change', () => {
-    if (fileInput.files.length) {
-        showPreview(fileInput.files[0]);
-    }
-});
+dropZone.ondragover = e => {
+    e.preventDefault();
+    dropZone.classList.add('drag');
+};
+
+dropZone.ondragleave = () => dropZone.classList.remove('drag');
+
+dropZone.ondrop = e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag');
+    fileInput.files = e.dataTransfer.files;
+    showPreview(fileInput.files[0]);
+};
+
+fileInput.onchange = () => showPreview(fileInput.files[0]);
 
 function showPreview(file) {
-    if (!file.type.startsWith('image/')) return;
-
+    if (!file || !file.type.startsWith('image/')) return;
     preview.innerHTML = '';
     const img = document.createElement('img');
     img.src = URL.createObjectURL(file);
-    img.onload = () => URL.revokeObjectURL(img.src);
     preview.appendChild(img);
 }
 </script>

@@ -1,19 +1,121 @@
-<h2>Step 4: Decrypt File (Salsa20)</h2>
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Dekripsi File – Salsa20</title>
+    <link rel="stylesheet" href="{% static 'interface.css' %}">
+</head>
+<body>
 
-<form method="POST" enctype="multipart/form-data">
-    {% csrf_token %}
+<nav class="navbar">
+    <div class="brand">CryptoApp</div>
+    <ul>
+        <li><a href="{% url 'home' %}">Beranda</a></li>
+        <li><a href="{% url 'decode' %}">Ekstraksi</a></li>
+        <li><a href="{% url 'decrypt' %}" class="active">Dekripsi</a></li>
+        <li><a href="#">Tata Cara</a></li>
+    </ul>
+</nav>
 
-    <label>Recovered BIN:</label><br>
-    <input type="file" name="cipher" required><br><br>
+<div class="container">
+    <h1>Dekripsi File – Salsa20</h1>
 
-    <label>Key File:</label><br>
-    <input type="file" name="key" required><br><br>
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
 
-    <button type="submit">Decrypt</button>
-</form>
+        <div class="main">
+            <div class="left-panel">
+                <div class="upload-box" id="cipherZone">
+                    <strong>Click or Drag Cipher</strong>
+                    <span>Unggah file terenkripsi (.bin)</span>
+                    <input type="file" name="cipher" id="cipherInput" accept=".bin" hidden required>
+                </div>
 
-{% if recovered %}
-<hr>
-<h3>Recovered File</h3>
-<a href="{{ recovered }}" download>Download Original File</a>
-{% endif %}
+                <div class="format">Format: BIN</div>
+
+                <div class="upload-box" id="keyZone" style="margin-top:20px">
+                    <strong>Click or Drag Key</strong>
+                    <span>Unggah file kunci</span>
+                    <input type="file" name="key" id="keyInput" hidden required>
+                </div>
+
+                <div class="upload-box" id="metaZone" style="margin-top:20px">
+                    <strong>Click or Drag Metadata</strong>
+                    <span>Unggah metadata (.json)</span>
+                    <input type="file" name="metadata" id="metaInput" accept=".json" hidden required>
+                </div>
+
+                <div class="controls">
+                    <button type="submit" class="btn primary">
+                        Mulai Dekripsi
+                    </button>
+                    <span class="progress">Progres : 0%</span>
+                </div>
+
+            </div>
+
+            <div class="right-panel">
+                {% if recovered %}
+                <div class="preview">
+                    <img src="{{ recovered }}" alt="Hasil Dekripsi">
+                </div>
+
+                <div class="downloads">
+                    <a href="{{ recovered }}" download class="btn">
+                        Download File Asli
+                    </a>
+                </div>
+
+                <div class="details">
+                    <p>Status : <b>Berhasil didekripsi</b></p>
+                    <p>Algoritma : Salsa20</p>
+                </div>
+                {% else %}
+                <div class="preview">
+                    <span style="color:#777">
+                        Preview akan muncul setelah dekripsi
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="actions" style="margin-top:30px">
+            <a href="{% url 'home' %}" class="btn">
+                Kembali ke Beranda
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+function setupDrop(zoneId, inputId) {
+    const zone = document.getElementById(zoneId);
+    const input = document.getElementById(inputId);
+
+    zone.onclick = () => input.click();
+
+    zone.ondragover = e => {
+        e.preventDefault();
+        zone.classList.add('drag');
+    };
+
+    zone.ondragleave = () => zone.classList.remove('drag');
+
+    zone.ondrop = e => {
+        e.preventDefault();
+        zone.classList.remove('drag');
+        if (e.dataTransfer.files.length) {
+            input.files = e.dataTransfer.files;
+        }
+    };
+}
+
+setupDrop('cipherZone', 'cipherInput');
+setupDrop('keyZone', 'keyInput');
+setupDrop('metaZone', 'metaInput');
+</script>
+
+</body>
+</html>

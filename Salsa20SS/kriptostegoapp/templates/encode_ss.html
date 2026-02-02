@@ -9,11 +9,13 @@
 <body>
 
 <nav class="navbar">
-    <div class="brand">CryptoApp</div>
+    <div class="brand">Kripto-Stegano</div>
     <ul>
         <li><a href="{% url 'home' %}">Beranda</a></li>
         <li><a href="{% url 'encrypt' %}">Enkripsi</a></li>
         <li><a href="{% url 'encode' %}" class="active">Penyisipan</a></li>
+        <li><a href="{% url 'test' %}">Pengujian</a></li>
+        <li><a href="#">Tata Cara</a></li>
     </ul>
 </nav>
 
@@ -47,7 +49,6 @@
 
                 <div class="controls">
                     <button type="submit" class="btn primary">Mulai Penyisipan</button>
-                    <span class="progress">Progres : 0%</span>
                 </div>
 
                 {% if file %}
@@ -61,8 +62,25 @@
             </div>
 
             <div class="right-panel">
-                {% if stego %}
+                <div class="result-area" id="uploadInfo"
+                    {% if not upload_info %}style="display:none"{% endif %}>
+                    <h3>Informasi Upload</h3>
+                    <table class="metrics-table">
+                        <tbody id="uploadTable">
+                            {% for f in upload_info %}
+                            <tr id="row-{{ f.label }}">
+                                <td>{{ f.label|upper }}</td>
+                                <td>{{ f.name }}</td>
+                                <td>{{ f.size }} byte</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if file %}
                 <div class="result-area">
+                    <h3>Hasil Penyisipan</h3>
                     <div class="details">
                         <p>Nama pesan : {{ message_name }}</p>
                         <p>Ukuran pesan : {{ message_size }}</p>
@@ -75,57 +93,107 @@
                         <p>Kapasitas dibutuhkan : {{ required_capacity }}</p>
                         <p>Padding : {{ padding }}</p>
                         <br>
+                        <p>Waktu Penyisipan : <b>{{ execution_time|floatformat:4 }} detik</b></p>
                         <p>Status : <b>Penyisipan berhasil</b></p>
                     </div>
                 </div>
                 {% endif %}
-
             </div>
         </div>
     </form>
 </div>
 
 <script>
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
-const audioDropZone = document.getElementById('audioDropZone');
-const audioInput = document.getElementById('audioInput');
+function setupDrop({ zoneId, inputId, label, allowedExt = null }) {
+    const zone = document.getElementById(zoneId);
+    const input = document.getElementById(inputId);
 
-dropZone.onclick = () => fileInput.click();
-dropZone.ondragover = e => {
-    e.preventDefault();
-    dropZone.classList.add('drag');
-};
-dropZone.ondragleave = () => dropZone.classList.remove('drag');
-dropZone.ondrop = e => {
-    e.preventDefault();
-    dropZone.classList.remove('drag');
-    fileInput.files = e.dataTransfer.files;
-};
-audioDropZone.onclick = () => audioInput.click();
+    zone.onclick = () => input.click();
 
-audioDropZone.ondragover = e => {
-    e.preventDefault();
-    audioDropZone.classList.add('drag');
-};
+    zone.ondragover = e => {
+        e.preventDefault();
+        zone.classList.add('drag');
+    };
 
-audioDropZone.ondragleave = () => audioDropZone.classList.remove('drag');
+    zone.ondragleave = () => zone.classList.remove('drag');
 
-audioDropZone.ondrop = e => {
-    e.preventDefault();
-    audioDropZone.classList.remove('drag');
+    zone.ondrop = e => {
+        e.preventDefault();
+        zone.classList.remove('drag');
 
-    const file = e.dataTransfer.files[0];
+        if (!e.dataTransfer.files.length) return;
 
-    if (!file.name.toLowerCase().endsWith('.wav')) {
-        alert('File harus berformat WAV!');
-        return;
+        const file = e.dataTransfer.files[0];
+
+        if (!validateFile(file, allowedExt)) return;
+
+        input.files = e.dataTransfer.files;
+        updateUploadInfo(label, file);
+    };
+
+    input.onchange = () => {
+        if (!input.files.length) return;
+
+        const file = input.files[0];
+        if (!validateFile(file, allowedExt)) {
+            input.value = '';
+            return;
+        }
+
+        updateUploadInfo(label, file);
+    };
+}
+
+function validateFile(file, allowedExt) {
+    if (!allowedExt) return true;
+
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!allowedExt.includes(ext)) {
+        alert(`Format file tidak valid! (${allowedExt.join(', ')})`);
+        return false;
+    }
+    return true;
+}
+
+function updateUploadInfo(label, file) {
+    const box = document.getElementById('uploadInfo');
+    const table = document.getElementById('uploadTable');
+
+    box.style.display = 'block';
+
+    let row = document.getElementById(`row-${label}`);
+    if (!row) {
+        row = document.createElement('tr');
+        row.id = `row-${label}`;
+        table.appendChild(row);
     }
 
-    audioInput.files = e.dataTransfer.files;
-};
-</script>
+    row.innerHTML = `
+        <td>${label.toUpperCase()}</td>
+        <td>${file.name}</td>
+        <td>${formatBytes(file.size)}</td>
+    `;
+}
 
+function formatBytes(bytes) {
+    const sizes = ['byte', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + sizes[i];
+}
+
+setupDrop({
+    zoneId: 'audioDropZone',
+    inputId: 'audioInput',
+    label: 'audio',
+    allowedExt: ['wav']
+});
+
+setupDrop({
+    zoneId: 'dropZone',
+    inputId: 'fileInput',
+    label: 'cipher'
+});
+</script>
 
 </body>
 </html>

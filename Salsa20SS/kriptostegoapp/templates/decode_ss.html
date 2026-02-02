@@ -14,6 +14,8 @@
         <li><a href="{% url 'home' %}">Beranda</a></li>
         <li><a href="{% url 'decode' %}" class="active">Ekstraksi</a></li>
         <li><a href="{% url 'decrypt' %}">Dekripsi</a></li>
+        <li><a href="{% url 'test' %}">Pengujian</a></li>
+        <li><a href="#">Tata Cara</a></li>
     </ul>
 </nav>
 
@@ -64,52 +66,123 @@
             </div>
 
             <div class="right-panel">
-                {% if file %}
-                <div class="result-area">
-                    <div class="details">
-                        <p>Status : <b>Ekstraksi berhasil</b></p>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-        </div>
 
-        <div class="actions" style="margin-top:30px">
-            <a href="{% url 'home' %}" class="btn">Kembali ke Beranda</a>
+            {% if file %}
+            <div class="result-area">
+                <h3>Hasil Ekstraksi</h3>
+                <table class="metrics-table">
+                    <tr>
+                        <td>Ukuran chip (L)</td>
+                        <td>{{ metrics.L }}</td>
+                    </tr>
+                    <tr>
+                        <td>Repeat</td>
+                        <td>{{ metrics.repeat_n }}</td>
+                    </tr>
+                    <tr>
+                        <td>Ukuran file hasil</td>
+                        <td>{{ metrics.recovered_size }} byte</td>
+                    </tr>
+                    <tr>
+                        <td>Waktu Ekstraksi</td>
+                        <td>{{ metrics.execution_time|floatformat:4 }} detik</td>
+                    </tr>
+                    <tr>
+                        <td>Status</td>
+                        <td><b>Ekstraksi berhasil</b></td>
+                    </tr>
+                </table>
+            </div>
+            {% endif %}
+
+
         </div>
     </form>
 </div>
 
 <script>
-const audioDropZone = document.getElementById('audioDropZone');
-const audioInput = document.getElementById('audioInput');
+function setupDrop({ zoneId, inputId, label, allowedExt }) {
+    const zone = document.getElementById(zoneId);
+    const input = document.getElementById(inputId);
 
-audioDropZone.onclick = () => audioInput.click();
+    zone.onclick = () => input.click();
 
-audioDropZone.ondragover = e => {
-    e.preventDefault();
-    audioDropZone.classList.add('drag');
-};
+    zone.ondragover = e => {
+        e.preventDefault();
+        zone.classList.add('drag');
+    };
 
-audioDropZone.ondragleave = () => {
-    audioDropZone.classList.remove('drag');
-};
+    zone.ondragleave = () => zone.classList.remove('drag');
 
-audioDropZone.ondrop = e => {
-    e.preventDefault();
-    audioDropZone.classList.remove('drag');
+    zone.ondrop = e => {
+        e.preventDefault();
+        zone.classList.remove('drag');
 
-    const file = e.dataTransfer.files[0];
-    const ext = file.name.toLowerCase();
+        if (!e.dataTransfer.files.length) return;
 
-    if (!ext.endsWith('.wav') && !ext.endsWith('.flac')) {
-        alert('File harus berformat WAV atau FLAC!');
-        return;
+        const file = e.dataTransfer.files[0];
+        if (!validateFile(file, allowedExt)) return;
+
+        input.files = e.dataTransfer.files;
+        updateUploadInfo(label, file);
+    };
+
+    input.onchange = () => {
+        if (!input.files.length) return;
+
+        const file = input.files[0];
+        if (!validateFile(file, allowedExt)) {
+            input.value = '';
+            return;
+        }
+
+        updateUploadInfo(label, file);
+    };
+}
+
+function validateFile(file, allowedExt) {
+    if (!allowedExt) return true;
+
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!allowedExt.includes(ext)) {
+        alert(`File harus berformat: ${allowedExt.join(', ')}`);
+        return false;
+    }
+    return true;
+}
+
+function updateUploadInfo(label, file) {
+    const box = document.getElementById('uploadInfo');
+    const table = document.getElementById('uploadTable');
+
+    box.style.display = 'block';
+
+    let row = document.getElementById(`row-${label}`);
+    if (!row) {
+        row = document.createElement('tr');
+        row.id = `row-${label}`;
+        table.appendChild(row);
     }
 
-    audioInput.files = e.dataTransfer.files;
-};
-</script>
+    row.innerHTML = `
+        <td>${label.toUpperCase()}</td>
+        <td>${file.name}</td>
+        <td>${formatBytes(file.size)}</td>
+    `;
+}
 
+function formatBytes(bytes) {
+    const sizes = ['byte', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + sizes[i];
+}
+
+setupDrop({
+    zoneId: 'audioDropZone',
+    inputId: 'audioInput',
+    label: 'stego',
+    allowedExt: ['wav', 'flac']
+});
+</script>
 </body>
 </html>

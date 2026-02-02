@@ -35,7 +35,6 @@ def dsss_encode(
         channels=i.channels,
         format="FLAC",
     ) as o:
-
         for idx, bit in enumerate(bits):
             blk = i.read(L, dtype="float32")
             if len(blk) < L:
@@ -67,7 +66,6 @@ def dsss_decode(
         for idx, blk in enumerate(f.blocks(blocksize=L, dtype="float32")):
             blk = blk[:, 0] if blk.ndim == 2 else blk
             blk = np.pad(blk, (0, max(0, L - len(blk))))
-
             bits.append(1 if np.dot(blk, pn) > 0 else 0)
 
             if payload_len is None and len(bits) >= 32 * repeat_n:

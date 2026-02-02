@@ -1,248 +1,342 @@
-import os
-import random
+import os, json, time, math, tempfile
 import numpy as np
-import tempfile
+from PIL import Image
+import soundfile as sf
+
 from django.shortcuts import render
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.conf import settings
-from django.http import JsonResponse
-import soundfile as sf
-import json
 
 from .algorithms.salsa20 import encrypt_decrypt
 from .algorithms.dsss import dsss_encode, dsss_decode
 
-DSSS_PROGRESS = {
-    "encode": 0,
-    "decode": 0,
-}
 
 def home(request):
-    return render(request, 'home.html')
+    return render(request, "home.html")
+
 
 def encrypt_file(request):
-    encrypted_url = None
-    key_url = None
-    metadata_url = None
+    context = {}
 
     if request.method == "POST":
-        uploaded_file = request.FILES["file"]
-        data = uploaded_file.read()
+        file = request.FILES["file"]
+        raw = file.read()
+        file.seek(0)
 
-        filename = uploaded_file.name
+        filename = file.name
+        filesize = file.size
         name, ext = os.path.splitext(filename)
 
-        metadata = {
+        context.update({
+            "file": True,
+            "filename": filename,
+            "filesize": filesize,
+        })
+
+        key = os.urandom(32)
+        nonce = os.urandom(8)
+
+        metadata_data = {
             "filename": name,
-            "extension": ext
+            "extension": ext,
+            "filesize": filesize,
+            "nonce": nonce.hex()
         }
 
-        key = bytes([random.randint(0, 255) for _ in range(32)])
-        nonce = b"12345678"
+        start = time.time()
+        cipher = encrypt_decrypt(raw, key, nonce)
+        exec_time = time.time() - start
 
-        cipher_bytes = encrypt_decrypt(data, key, nonce)
+        cipher_size = len(cipher)
+        encryption_percentage = round((cipher_size / filesize) * 100, 2)
 
-        encrypted_path = "encrypted/encrypted.bin"
-        key_path = "encrypted/key.bin"
-        meta_path = "encrypted/metadata.json"
+        ts = int(time.time())
 
-        default_storage.save(encrypted_path, ContentFile(cipher_bytes))
+        cipher_filename = f"{name}_{ts}.bin"
+        key_filename = f"{name}_{ts}.key"
+        meta_filename = f"{name}_{ts}.json"
+
+        enc_path = f"encrypted/{cipher_filename}"
+        key_path = f"encrypted/{key_filename}"
+        meta_path = f"encrypted/{meta_filename}"
+
+
+        metrics = {
+            "execution_time": exec_time,
+            "cipher_size": cipher_size,
+            "encryption_percentage": encryption_percentage
+        }
+
+        default_storage.save(enc_path, ContentFile(cipher))
         default_storage.save(key_path, ContentFile(key))
-        default_storage.save(meta_path, ContentFile(json.dumps(metadata)))
+        default_storage.save(
+            meta_path,
+            ContentFile(json.dumps(metadata_data, indent=2))
+        )
 
-        encrypted_url = settings.MEDIA_URL + encrypted_path
-        key_url = settings.MEDIA_URL + key_path
-        metadata_url = settings.MEDIA_URL + meta_path
+        context.update({
+            "encrypted": settings.MEDIA_URL + enc_path,
+            "key": settings.MEDIA_URL + key_path,
+            "metadata": settings.MEDIA_URL + meta_path,
+            "cipher_filename": cipher_filename,
+            "cipher_filesize": cipher_size,
+            "metrics": metrics
+        })
 
-    return render(request, "encrypt_salsa20.html", {
-        "encrypted": encrypted_url,
-        "key": key_url,
-        "metadata": metadata_url,
-    })
-
+    return render(request, "encrypt_salsa20.html", context)
 
 def decrypt_file(request):
-    recovered_url = None
+    context = {}
 
     if request.method == "POST":
-        cipher_bytes = request.FILES["cipher"].read()
-        key = request.FILES["key"].read()
-        meta = json.loads(request.FILES["metadata"].read().decode())
+        cipher_file = request.FILES.get("cipher")
+        key_file = request.FILES.get("key")
+        meta_file = request.FILES.get("metadata")
+        context.update({
+            "upload_info": [
+                {
+                    "label": "Cipher",
+                    "name": cipher_file.name,
+                    "size": cipher_file.size,
+                },
+                {
+                    "label": "Key",
+                    "name": key_file.name,
+                    "size": key_file.size,
+                },
+                {
+                    "label": "Metadata",
+                    "name": meta_file.name,
+                    "size": meta_file.size,
+                },
+            ]
+        })
 
-        nonce = b"12345678"
-        plain_bytes = encrypt_decrypt(cipher_bytes, key, nonce)
+        cipher = cipher_file.read()
+        key = key_file.read()
+        metadata = json.loads(meta_file.read())
 
-        filename = meta["filename"]
-        ext = meta["extension"]
+        start = time.time()
+        nonce = bytes.fromhex(metadata["nonce"])
+        plain = encrypt_decrypt(cipher, key, nonce)
+        exec_time = time.time() - start
 
-        recovered_path = f"decrypted/{filename}{ext}"
+        filename = metadata["filename"] + metadata["extension"]
+        out_path = f"decrypted/{filename}"
+        default_storage.save(out_path, ContentFile(plain))
 
-        default_storage.save(recovered_path, ContentFile(plain_bytes))
-        recovered_url = settings.MEDIA_URL + recovered_path
+        context.update({
+            "recovered": settings.MEDIA_URL + out_path,
+            "filename": filename,
+            "metrics": {
+                "input_size": len(cipher),
+                "output_size": len(plain),
+                "execution_time": exec_time,
+            }
+        })
 
-    return render(request, "decrypt_salsa20.html", {
-        "recovered": recovered_url
-    })
+    return render(request, "decrypt_salsa20.html", context)
 
 
 def stegano_encode(request):
-    output_url = None
+    context = {}
 
-    if request.method == "POST":
-        DSSS_PROGRESS["encode"] = 0
-        audio_file = request.FILES.get("audio_file")
-        secret_file = request.FILES.get("secret_file")
-        password = request.POST.get("password", "secret")
+    if request.method != "POST":
+        return render(request, "encode_ss.html", context)
 
-        if not audio_file or not secret_file:
-            return render(request, "encode_ss.html", {
-                "error": "Audio WAV dan file BIN wajib diunggah"
-            })
+    audio_file = request.FILES.get("audio_file")
+    secret_file = request.FILES.get("secret_file")
+    password = request.POST.get("password") or "secret"
 
-        alpha = float(request.POST.get("alpha", 0.01))
-        L = int(request.POST.get("L", 512))
-        repeat_n = int(request.POST.get("repeat", 3))
+    if not audio_file or not secret_file:
+        context["error"] = "Audio dan file rahasia wajib diunggah"
+        return render(request, "encode_ss.html", context)
 
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_audio:
-            tmp_audio.write(audio_file.read())
-            in_audio = tmp_audio.name
+    context["upload_info"] = [
+        {
+            "label": "cipher",
+            "name": secret_file.name,
+            "size": secret_file.size,
+        },
+        {
+            "label": "audio",
+            "name": audio_file.name,
+            "size": audio_file.size,
+        },
+    ]
 
-        secret_bytes = secret_file.read()
-        out_audio = in_audio.replace(".wav", "_stego.flac")
+    alpha = 0.01
+    L = 512
+    repeat_n = 3
 
-        def progress_cb(p):
-            DSSS_PROGRESS["encode"] = p
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_audio:
+        tmp_audio.write(audio_file.read())
+        in_audio_path = tmp_audio.name
 
-        dsss_encode(
-            in_audio=in_audio,
-            out_audio=out_audio,
-            payload=secret_bytes,
-            key=password,
-            alpha=alpha,
-            L=L,
-            repeat_n=repeat_n,
-            progress_cb=progress_cb,
-        )
+    payload = secret_file.read()
+    out_audio_path = in_audio_path.replace(".wav", "_stego.flac")
 
-        dst = "stego/encoded.flac"
-        with open(out_audio, "rb") as f:
-            default_storage.save(dst, ContentFile(f.read()))
+    with sf.SoundFile(in_audio_path) as audio:
+        samplerate = audio.samplerate
+        channels = audio.channels
+        frames = len(audio)
 
-        output_url = settings.MEDIA_URL + dst
-        os.remove(in_audio)
-        os.remove(out_audio)
-        DSSS_PROGRESS["encode"] = 100
-    return render(request, "encode_ss.html", {
-        "file": output_url
+    capacity = frames // L
+    required_capacity = (len(payload) * 8 + 32) * repeat_n
+    padding = max(0, capacity - required_capacity)
+
+    start_time = time.time()
+    dsss_encode(
+        in_audio=in_audio_path,
+        out_audio=out_audio_path,
+        payload=payload,
+        key=password,
+        alpha=alpha,
+        L=L,
+        repeat_n=repeat_n,
+    )
+    execution_time = time.time() - start_time
+
+    stego_path = f"stego/encoded_{int(time.time())}.flac"
+    with open(out_audio_path, "rb") as f:
+        default_storage.save(stego_path, ContentFile(f.read()))
+
+    context.update({
+        "file": settings.MEDIA_URL + stego_path,
+
+        "message_name": secret_file.name,
+        "message_size": len(payload),
+
+        "audio_name": audio_file.name,
+        "bitrate": samplerate,
+        "channel": channels,
+
+        "capacity": capacity,
+        "required_capacity": required_capacity,
+        "padding": padding,
+        "execution_time": execution_time, 
     })
 
+    for path in (in_audio_path, out_audio_path):
+        if os.path.exists(path):
+            os.remove(path)
+
+    return render(request, "encode_ss.html", context)
 
 def stegano_decode(request):
-    output_url = None
+    context = {}
 
-    if request.method == "POST":
-        DSSS_PROGRESS["decode"] = 0
+    if request.method != "POST":
+        return render(request, "decode_ss.html", context)
 
-        stego_audio = request.FILES.get("audio_file")
-        password = request.POST.get("password", "secret")
-        L = int(request.POST.get("L", 512))
-        repeat_n = int(request.POST.get("repeat", 3))
+    stego_file = request.FILES.get("audio_file")
+    password = request.POST.get("password") or "secret"
+    L = int(request.POST.get("L", 512))
+    repeat_n = int(request.POST.get("repeat", 3))
 
-        if not stego_audio:
-            return render(request, "decode_ss.html", {
-                "error": "File audio wajib diunggah"
-            })
+    if not stego_file:
+        context["error"] = "File audio stego wajib diunggah"
+        return render(request, "decode_ss.html", context)
 
-        # ambil ekstensi asli
-        ext = os.path.splitext(stego_audio.name)[1].lower()
-        if ext not in [".wav", ".flac"]:
-            return render(request, "decode_ss.html", {
-                "error": "Format harus WAV atau FLAC"
-            })
+    ext = os.path.splitext(stego_file.name)[1].lower()
+    if ext not in [".wav", ".flac"]:
+        context["error"] = "Format harus WAV atau FLAC"
+        return render(request, "decode_ss.html", context)
 
-        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
-            tmp.write(stego_audio.read())
-            stego_path = tmp.name
+    context["upload_info"] = [
+        {
+            "label": "stego",
+            "name": stego_file.name,
+            "size": stego_file.size,
+        }
+    ]
 
-        out_path = stego_path + "_decoded.bin"
+    with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
+        tmp.write(stego_file.read())
+        stego_path = tmp.name
 
-        def progress_cb(p):
-            DSSS_PROGRESS["decode"] = p
+    out_path = stego_path + "_decoded.bin"
 
-        dsss_decode(
-            stego_audio=stego_path,
-            out_file=out_path,
-            key=password,
-            L=L,
-            repeat_n=repeat_n,
-            progress_cb=progress_cb,
-        )
+    start_time = time.time()
+    dsss_decode(
+        stego_audio=stego_path,
+        out_file=out_path,
+        key=password,
+        L=L,
+        repeat_n=repeat_n,
+    )
+    execution_time = time.time() - start_time
 
-        dst = "stego/recovered.bin"
-        with open(out_path, "rb") as f:
-            default_storage.save(dst, ContentFile(f.read()))
+    dst = f"stego/recovered_{int(time.time())}.bin"
+    with open(out_path, "rb") as f:
+        default_storage.save(dst, ContentFile(f.read()))
 
-        output_url = settings.MEDIA_URL + dst
+    recovered_size = os.path.getsize(out_path)
 
-        os.remove(stego_path)
-        os.remove(out_path)
-
-        DSSS_PROGRESS["decode"] = 100
-
-    return render(request, "decode_ss.html", {
-        "file": output_url
+    context.update({
+        "file": settings.MEDIA_URL + dst,
+        "metrics": {
+            "L": L,
+            "repeat_n": repeat_n,
+            "execution_time": execution_time,
+            "recovered_size": recovered_size,
+        }
     })
 
-    output_url = None
+    for path in (stego_path, out_path):
+        if os.path.exists(path):
+            os.remove(path)
+
+    return render(request, "decode_ss.html", context)
+
+
+def pengujian_file(request):
+    context = {}
 
     if request.method == "POST":
-        DSSS_PROGRESS["decode"] = 0
-        stego_audio = request.FILES.get("audio_file")
-        password = request.POST.get("password", "secret")
-        L = int(request.POST.get("L", 512))
-        repeat_n = int(request.POST.get("repeat", 3))
+        original_file = request.FILES.get("original")
+        recovered_file = request.FILES.get("recovered")
+        context["upload_info"] = [
+            {
+                "label": "Original",
+                "name": original_file.name,
+                "size": original_file.size,
+            },
+            {
+                "label": "Recovered",
+                "name": recovered_file.name,
+                "size": recovered_file.size,
+            },
+        ]
+        orig_bytes = original_file.read()
+        recv_bytes = recovered_file.read()
 
-        if not stego_audio:
-            return render(request, "decode_ss.html", {
-                "error": "File audio stego wajib diunggah"
-            })
+        min_len = min(len(orig_bytes), len(recv_bytes))
+        orig_bytes = orig_bytes[:min_len]
+        recv_bytes = recv_bytes[:min_len]
 
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-            tmp.write(stego_audio.read())
-            stego_path = tmp.name
+        orig_arr = np.frombuffer(orig_bytes, dtype=np.uint8)
+        recv_arr = np.frombuffer(recv_bytes, dtype=np.uint8)
 
-        out_path = stego_path.replace(".wav", "_decoded.bin")
+        mse = calculate_mse(orig_arr, recv_arr)
+        psnr = calculate_psnr(mse)
+        ber = calculate_ber(orig_bytes, recv_bytes)
 
-        def progress_cb(p):
-            DSSS_PROGRESS["decode"] = p
+        context["metrics"] = {
+            "mse": mse,
+            "psnr": psnr,
+            "ber": ber,
+        }
 
-        dsss_decode(
-            stego_audio=stego_path,
-            out_file=out_path,
-            key=password,
-            L=L,
-            repeat_n=repeat_n,
-            progress_cb=progress_cb,
-        )
+    return render(request, "pengujian.html", context)
 
-        dst = "stego/recovered.bin"
-        with open(out_path, "rb") as f:
-            default_storage.save(dst, ContentFile(f.read()))
 
-        output_url = settings.MEDIA_URL + dst
+def calculate_mse(a, b):
+    return np.mean((a - b) ** 2)
 
-        os.remove(stego_path)
-        os.remove(out_path)
+def calculate_psnr(mse, max_pixel=255.0):
+    return float("inf") if mse == 0 else 20 * math.log10(max_pixel / math.sqrt(mse))
 
-        DSSS_PROGRESS["decode"] = 100
-
-    return render(request, "decode_ss.html", {
-        "file": output_url
-    })
-
-def dsss_progress_encode(request):
-    return JsonResponse({"progress": DSSS_PROGRESS["encode"]})
-
-def dsss_progress_decode(request):
-    return JsonResponse({"progress": DSSS_PROGRESS["decode"]})
+def calculate_ber(a, b):
+    return sum(bin(x ^ y).count("1") for x, y in zip(a, b)) / (len(a) * 8)

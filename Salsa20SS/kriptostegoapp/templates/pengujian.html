@@ -1,0 +1,201 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Pengujian Hasil</title>
+    <link rel="stylesheet" href="{% static 'interface.css' %}">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="brand">CryptoApp</div>
+    <ul>
+        <li><a href="{% url 'home' %}">Beranda</a></li>
+        <li><a href="{% url 'test' %}" class="active">Pengujian</a></li>
+        <li><a href="#">Tata Cara</a></li>
+    </ul>
+</nav>
+
+<div class="container">
+    <h1>Pengujian Hasil Enkripsi</h1>
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="main">
+            <div class="left-panel">
+                <div class="upload-box" id="origZone">
+                <strong>Click or Drag</strong>
+                <span>Pesan asli</span>
+                <input type="file" name="original" id="origInput" hidden required>
+            </div>
+
+            <div class="upload-box" id="recvZone" style="margin-top:20px">
+                <strong>Click or Drag</strong>
+                <span>Pesan hasil</span>
+                <input type="file" name="recovered" id="recvInput" hidden required>
+            </div>
+
+            <div class="controls" style="margin-top:30px">
+                <button type="submit" class="btn primary">
+                    Mulai Pengujian
+                </button>
+            </div>
+
+            </div>
+
+            <div class="right-panel">
+                <div class="preview-grid">
+
+                    <div class="preview-box">
+                        <h4>Pesan Asli</h4>
+                        <div class="preview" id="preview-original">
+                            <span>Belum ada gambar</span>
+                        </div>
+                    </div>
+
+                    <div class="preview-box">
+                        <h4>Pesan Hasil</h4>
+                        <div class="preview" id="preview-recovered">
+                            <span>Belum ada gambar</span>
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <div class="result-area" id="uploadInfo"
+                    {% if not upload_info %}style="display:none"{% endif %}>
+                    <h3>Informasi Upload</h3>
+                    <table class="metrics-table">
+                        <tbody id="uploadTable">
+                            {% for f in upload_info %}
+                            <tr id="row-{{ f.label|lower }}">
+                                <td>{{ f.label }}</td>
+                                <td>{{ f.name }}</td>
+                                <td>{{ f.size }} byte</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if metrics %}
+                <div class="result-area">
+                    <h3>Hasil Pengujian</h3>
+                    <table class="metrics-table">
+                        <tr>
+                            <td>MSE</td>
+                            <td>{{ metrics.mse|floatformat:6 }}</td>
+                        </tr>
+                        <tr>
+                            <td>PSNR</td>
+                            <td>
+                                {% if metrics.psnr == inf %}
+                                    ∞
+                                {% else %}
+                                    {{ metrics.psnr|floatformat:4 }} dB
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>BER</td>
+                            <td>{{ metrics.ber|floatformat:8 }}</td>
+                        </tr>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function setupDrop(zoneId, inputId, label) {
+    const zone = document.getElementById(zoneId);
+    const input = document.getElementById(inputId);
+
+    if (!zone || !input) return;
+
+    zone.addEventListener('click', () => input.click());
+
+    zone.addEventListener('dragover', e => {
+        e.preventDefault();
+        zone.classList.add('drag');
+    });
+
+    zone.addEventListener('dragleave', () =>
+        zone.classList.remove('drag')
+    );
+
+    zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.classList.remove('drag');
+        const file = e.dataTransfer.files?.[0];
+        if (file) {
+            input.files = e.dataTransfer.files;
+            handleFile(label, file);
+        }
+    });
+
+    input.addEventListener('change', () => {
+        const file = input.files?.[0];
+        if (file) handleFile(label, file);
+    });
+}
+
+function handleFile(label, file) {
+    updateUploadInfo(label, file);
+    updatePreview(label, file);
+}
+
+function updateUploadInfo(label, file) {
+    const box = document.getElementById('uploadInfo');
+    const table = document.getElementById('uploadTable');
+
+    if (!box || !table) return;
+
+    box.style.display = 'block';
+
+    let row = document.getElementById(`row-${label}`);
+    if (!row) {
+        row = document.createElement('tr');
+        row.id = `row-${label}`;
+        table.appendChild(row);
+    }
+
+    row.innerHTML = `
+        <td>${label.toUpperCase()}</td>
+        <td>${file.name}</td>
+        <td>${formatBytes(file.size)}</td>
+    `;
+}
+
+function updatePreview(label, file) {
+    const preview = document.getElementById(`preview-${label}`);
+    if (!preview) return;
+
+    preview.innerHTML = '';
+
+    if (file.type.startsWith('image/')) {
+        const img = new Image();
+        img.src = URL.createObjectURL(file);
+        img.onload = () => URL.revokeObjectURL(img.src);
+        preview.appendChild(img);
+    } else {
+        preview.innerHTML = '<span>Preview tidak tersedia</span>';
+    }
+}
+
+function formatBytes(bytes) {
+    if (!bytes) return '0 byte';
+    const sizes = ['byte', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
+}
+setupDrop('origZone', 'origInput', 'original');
+setupDrop('recvZone', 'recvInput', 'recovered');
+</script>
+
+</body>
+</html>

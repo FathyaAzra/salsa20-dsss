@@ -14,6 +14,7 @@
         <li><a href="{% url 'home' %}">Beranda</a></li>
         <li><a href="{% url 'decode' %}">Ekstraksi</a></li>
         <li><a href="{% url 'decrypt' %}" class="active">Dekripsi</a></li>
+        <li><a href="{% url 'test' %}">Pengujian</a></li>
         <li><a href="#">Tata Cara</a></li>
     </ul>
 </nav>
@@ -50,17 +51,31 @@
                     <button type="submit" class="btn primary">
                         Mulai Dekripsi
                     </button>
-                    <span class="progress">Progres : 0%</span>
                 </div>
-
             </div>
 
             <div class="right-panel">
-                {% if recovered %}
-                <div class="preview">
-                    <img src="{{ recovered }}" alt="Hasil Dekripsi">
+
+                <div class="result-area" id="uploadInfo"
+                    {% if not upload_info %}style="display:none"{% endif %}>
+                    <h3>Informasi Upload</h3>
+                    <table class="metrics-table">
+                        <tbody id="uploadTable">
+
+                            {% for f in upload_info %}
+                            <tr>
+                                <td>{{ f.label }}</td>
+                                <td>{{ f.name }}</td>
+                                <td>{{ f.size }} byte</td>
+                            </tr>
+                            {% endfor %}
+
+                        </tbody>
+                    </table>
                 </div>
 
+
+                {% if recovered %}
                 <div class="downloads">
                     <a href="{{ recovered }}" download class="btn">
                         Download File Asli
@@ -71,6 +86,33 @@
                     <p>Status : <b>Berhasil didekripsi</b></p>
                     <p>Algoritma : Salsa20</p>
                 </div>
+
+                <div class="result-area">
+                    <h3>Informasi Dekripsi</h3>
+                    <table class="metrics-table">
+                        <tr>
+                            <td>Nama file</td>
+                            <td>{{ filename }}</td>
+                        </tr>
+                        <tr>
+                            <td>Ukuran cipher</td>
+                            <td>{{ metrics.input_size }} byte</td>
+                        </tr>
+                        <tr>
+                            <td>Ukuran plaintext</td>
+                            <td>{{ metrics.output_size }} byte</td>
+                        </tr>
+                        <tr>
+                            <td>Waktu dekripsi</td>
+                            <td>{{ metrics.execution_time|floatformat:4 }} detik</td>
+                        </tr>
+                    </table>
+
+                    <div class="preview">
+                        <img src="{{ recovered }}" alt="Hasil Dekripsi">
+                    </div>
+                </div>
+
                 {% else %}
                 <div class="preview">
                     <span style="color:#777">
@@ -90,7 +132,12 @@
 </div>
 
 <script>
-function setupDrop(zoneId, inputId) {
+function setupDrop({
+    zoneId,
+    inputId,
+    label,
+    allowedExt = null
+}) {
     const zone = document.getElementById(zoneId);
     const input = document.getElementById(inputId);
 
@@ -106,16 +153,83 @@ function setupDrop(zoneId, inputId) {
     zone.ondrop = e => {
         e.preventDefault();
         zone.classList.remove('drag');
-        if (e.dataTransfer.files.length) {
-            input.files = e.dataTransfer.files;
+
+        if (!e.dataTransfer.files.length) return;
+
+        const file = e.dataTransfer.files[0];
+        if (!validateFile(file, allowedExt)) return;
+
+        input.files = e.dataTransfer.files;
+        updateUploadInfo(label, file);
+    };
+
+    input.onchange = () => {
+        if (!input.files.length) return;
+
+        const file = input.files[0];
+        if (!validateFile(file, allowedExt)) {
+            input.value = '';
+            return;
         }
+
+        updateUploadInfo(label, file);
     };
 }
 
-setupDrop('cipherZone', 'cipherInput');
-setupDrop('keyZone', 'keyInput');
-setupDrop('metaZone', 'metaInput');
-</script>
+function validateFile(file, allowedExt) {
+    if (!allowedExt) return true;
 
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!allowedExt.includes(ext)) {
+        alert(`Format tidak valid! Harus: ${allowedExt.join(', ')}`);
+        return false;
+    }
+    return true;
+}
+
+function updateUploadInfo(label, file) {
+    const infoBox = document.getElementById('uploadInfo');
+    const table = document.getElementById('uploadTable');
+
+    infoBox.style.display = 'block';
+
+    let row = document.getElementById(`row-${label}`);
+    if (!row) {
+        row = document.createElement('tr');
+        row.id = `row-${label}`;
+        table.appendChild(row);
+    }
+
+    row.innerHTML = `
+        <td>${label.toUpperCase()}</td>
+        <td>${file.name}</td>
+        <td>${formatBytes(file.size)}</td>
+    `;
+}
+
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 byte';
+    const sizes = ['byte', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + sizes[i];
+}
+setupDrop({
+    zoneId: 'cipherZone',
+    inputId: 'cipherInput',
+    label: 'cipher',
+    allowedExt: ['bin']
+});
+setupDrop({
+    zoneId: 'keyZone',
+    inputId: 'keyInput',
+    label: 'key'
+});
+setupDrop({
+    zoneId: 'metaZone',
+    inputId: 'metaInput',
+    label: 'metadata',
+    allowedExt: ['json']
+});
+</script>
 </body>
 </html>

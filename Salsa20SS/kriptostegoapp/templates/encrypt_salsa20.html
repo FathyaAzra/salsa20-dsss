@@ -14,6 +14,8 @@
         <li><a href="{% url 'home' %}">Beranda</a></li>
         <li><a href="{% url 'encrypt' %}" class="active">Enkripsi</a></li>
         <li><a href="{% url 'encode' %}">Penyisipan</a></li>
+        <li><a href="{% url 'test' %}">Pengujian</a></li>
+        <li><a href="#">Tata Cara</a></li>
     </ul>
 </nav>
 
@@ -37,7 +39,6 @@
 
                 <div class="controls">
                     <button type="submit" class="btn primary">Mulai Enkripsi</button>
-                    <span class="progress">Progres : 0%</span>
                 </div>
 
                 {% if encrypted %}
@@ -55,61 +56,154 @@
                 <div class="preview" id="preview">
                     <span>Preview gambar</span>
                 </div>
+                <div class="file-info" id="fileInfo"
+                    {% if not file %}style="display:none"{% endif %}>
+                    <p><b>Nama file:</b>
+                        <span id="infoName">
+                            {{ filename|default:"" }}
+                        </span>
+                    </p>
+                    <p><b>Ukuran file:</b>
+                        <span id="infoSize">
+                            {% if filesize %}{{ filesize }} byte{% endif %}
+                        </span>
+                    </p>
+                </div>
+
 
                 {% if encrypted %}
                 <div class="result-area">
-                    <div class="details">
-                        <p>Pesan asli : {{ filename }}</p>
-                        <p>Ukuran : {{ filesize }}</p>
-                        <p>Kecepatan : {{ speed }}</p>
-                        <p>Status : <b>Terenkripsi 100%</b></p>
-                    </div>
+                    <h3>Hasil</h3>
+                    <table class="metrics-table">
+                        <tr>
+                            <td>Persen terenkripsi (%)</td>
+                            <td>{{ metrics.encryption_percentage }}%</td>
+                        </tr>
+                        <tr>
+                            <td>Waktu Eksekusi</td>
+                            <td>{{ metrics.execution_time|floatformat:4 }} detik</td>
+                        </tr>
+                        <tr>
+                            <td>Nama file cipher</td>
+                            <td>{{ cipher_filename }}</td>
+                        </tr>
+                        <tr>
+                            <td>Ukuran pesan cipher</td>
+                            <td>{{ cipher_filesize }} byte</td>
+                        </tr>
+                    </table>
+                </div>
+                {% endif %}
 
-                    <div class="next">
-                        <a href="{% url 'encode' %}" class="btn primary">
-                            Tahap Berikutnya →
-                        </a>
-                    </div>
+                {% if encrypted %}
+                <div class="next">
+                    <a href="{% url 'encode' %}" class="btn primary">
+                        Tahap Berikutnya
+                    </a>
                 </div>
                 {% endif %}
 
             </div>
-
         </div>
     </form>
 </div>
 
 <script>
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
-const preview = document.getElementById('preview');
+function setupDropZone({
+    zoneId,
+    inputId,
+    previewId,
+    infoBoxId,
+    infoNameId,
+    infoSizeId,
+    imageOnly = false
+}) {
+    const zone = document.getElementById(zoneId);
+    const input = document.getElementById(inputId);
+    const preview = document.getElementById(previewId);
 
-dropZone.onclick = () => fileInput.click();
+    const infoBox = document.getElementById(infoBoxId);
+    const infoName = document.getElementById(infoNameId);
+    const infoSize = document.getElementById(infoSizeId);
 
-dropZone.ondragover = e => {
-    e.preventDefault();
-    dropZone.classList.add('drag');
-};
+    zone.onclick = () => input.click();
 
-dropZone.ondragleave = () => dropZone.classList.remove('drag');
+    zone.ondragover = e => {
+        e.preventDefault();
+        zone.classList.add('drag');
+    };
 
-dropZone.ondrop = e => {
-    e.preventDefault();
-    dropZone.classList.remove('drag');
-    fileInput.files = e.dataTransfer.files;
-    showPreview(fileInput.files[0]);
-};
+    zone.ondragleave = () => zone.classList.remove('drag');
 
-fileInput.onchange = () => showPreview(fileInput.files[0]);
+    zone.ondrop = e => {
+        e.preventDefault();
+        zone.classList.remove('drag');
 
-function showPreview(file) {
-    if (!file || !file.type.startsWith('image/')) return;
-    preview.innerHTML = '';
-    const img = document.createElement('img');
-    img.src = URL.createObjectURL(file);
-    preview.appendChild(img);
+        if (!e.dataTransfer.files.length) return;
+
+        const file = e.dataTransfer.files[0];
+        if (!validateFile(file, imageOnly)) return;
+
+        input.files = e.dataTransfer.files;
+        handleFile(file);
+    };
+
+    input.onchange = () => {
+        if (!input.files.length) return;
+
+        const file = input.files[0];
+        if (!validateFile(file, imageOnly)) {
+            input.value = '';
+            return;
+        }
+
+        handleFile(file);
+    };
+
+    function handleFile(file) {
+        preview.innerHTML = '';
+
+        if (file.type.startsWith('image/')) {
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.onload = () => URL.revokeObjectURL(img.src);
+            preview.appendChild(img);
+        } else {
+            preview.innerHTML = '<span>Preview tidak tersedia</span>';
+        }
+
+        infoName.textContent = file.name;
+        infoSize.textContent = formatBytes(file.size);
+        infoBox.style.display = 'block';
+    }
 }
-</script>
 
+function validateFile(file, imageOnly) {
+    if (!imageOnly) return true;
+
+    if (!file.type.startsWith('image/')) {
+        alert('Pesan hanya boleh berupa file gambar!');
+        return false;
+    }
+    return true;
+}
+
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 byte';
+    const sizes = ['byte', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + sizes[i];
+}
+
+setupDropZone({
+    zoneId: 'dropZone',
+    inputId: 'fileInput',
+    previewId: 'preview',
+    infoBoxId: 'fileInfo',
+    infoNameId: 'infoName',
+    infoSizeId: 'infoSize',
+    imageOnly: true
+});
+</script>
 </body>
 </html>

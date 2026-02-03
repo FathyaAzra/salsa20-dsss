@@ -9,7 +9,6 @@
 <body>
 
 <nav class="navbar">
-    <div class="brand">CryptoApp</div>
     <ul>
         <li><a href="{% url 'home' %}">Beranda</a></li>
         <li><a href="{% url 'test' %}" class="active">Pengujian</a></li>
@@ -24,23 +23,36 @@
         {% csrf_token %}
         <div class="main">
             <div class="left-panel">
-                <div class="upload-box" id="origZone">
-                <strong>Click or Drag</strong>
-                <span>Pesan asli</span>
-                <input type="file" name="original" id="origInput" hidden required>
-            </div>
 
-            <div class="upload-box" id="recvZone" style="margin-top:20px">
-                <strong>Click or Drag</strong>
-                <span>Pesan hasil</span>
-                <input type="file" name="recovered" id="recvInput" hidden required>
-            </div>
+                <div class="upload-box" id="audioOrigZone">
+                    <strong>Click or Drag</strong>
+                    <span>Audio Original</span>
+                    <input type="file" name="audio_original" id="audioOrigInput" hidden required>
+                </div>
 
-            <div class="controls" style="margin-top:30px">
-                <button type="submit" class="btn primary">
-                    Mulai Pengujian
-                </button>
-            </div>
+                <div class="upload-box" id="audioStegoZone" style="margin-top:15px">
+                    <strong>Click or Drag</strong>
+                    <span>Audio Stego</span>
+                    <input type="file" name="audio_stego" id="audioStegoInput" hidden required>
+                </div>
+
+                <div class="upload-box" id="msgOrigZone" style="margin-top:15px">
+                    <strong>Click or Drag</strong>
+                    <span>Pesan Asli</span>
+                    <input type="file" name="message_original" id="msgOrigInput" hidden required>
+                </div>
+
+                <div class="upload-box" id="msgRecvZone" style="margin-top:15px">
+                    <strong>Click or Drag</strong>
+                    <span>Pesan Hasil</span>
+                    <input type="file" name="message_recovered" id="msgRecvInput" hidden required>
+                </div>
+
+                <div class="controls" style="margin-top:30px">
+                    <button type="submit" class="btn primary">
+                        Mulai Pengujian
+                    </button>
+                </div>
 
             </div>
 
@@ -49,15 +61,15 @@
 
                     <div class="preview-box">
                         <h4>Pesan Asli</h4>
-                        <div class="preview" id="preview-original">
-                            <span>Belum ada gambar</span>
+                        <div class="preview" id="preview-message_original">
+                            <span>Tidak ada preview</span>
                         </div>
                     </div>
 
                     <div class="preview-box">
                         <h4>Pesan Hasil</h4>
-                        <div class="preview" id="preview-recovered">
-                            <span>Belum ada gambar</span>
+                        <div class="preview" id="preview-message_recovered">
+                            <span>Tidak ada preview</span>
                         </div>
                     </div>
 
@@ -82,29 +94,40 @@
 
                 {% if metrics %}
                 <div class="result-area">
-                    <h3>Hasil Pengujian</h3>
+                    <h3>Hasil Pengujian Audio</h3>
                     <table class="metrics-table">
                         <tr>
                             <td>MSE</td>
-                            <td>{{ metrics.mse|floatformat:6 }}</td>
+                            <td>{{ metrics.audio.mse|floatformat:6 }}</td>
                         </tr>
                         <tr>
                             <td>PSNR</td>
                             <td>
-                                {% if metrics.psnr == inf %}
+                                {% if metrics.audio.psnr == inf %}
                                     ∞
                                 {% else %}
-                                    {{ metrics.psnr|floatformat:4 }} dB
+                                    {{ metrics.audio.psnr|floatformat:4 }} dB
                                 {% endif %}
                             </td>
                         </tr>
                         <tr>
+                            <td>SSIM</td>
+                            <td>{{ metrics.audio.ssim|floatformat:6 }}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="result-area">
+                    <h3>Hasil Pengujian Pesan</h3>
+                    <table class="metrics-table">
+                        <tr>
                             <td>BER</td>
-                            <td>{{ metrics.ber|floatformat:8 }}</td>
+                            <td>{{ metrics.message.ber|floatformat:8 }}</td>
                         </tr>
                     </table>
                 </div>
                 {% endif %}
+
             </div>
         </div>
     </form>
@@ -193,8 +216,10 @@ function formatBytes(bytes) {
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
 }
-setupDrop('origZone', 'origInput', 'original');
-setupDrop('recvZone', 'recvInput', 'recovered');
+setupDrop('audioOrigZone', 'audioOrigInput', 'audio_original');
+setupDrop('audioStegoZone', 'audioStegoInput', 'audio_stego');
+setupDrop('msgOrigZone', 'msgOrigInput', 'message_original');
+setupDrop('msgRecvZone', 'msgRecvInput', 'message_recovered');
 </script>
 
 </body>

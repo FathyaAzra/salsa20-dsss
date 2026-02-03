@@ -2,6 +2,7 @@ import os, json, time, math, tempfile
 import numpy as np
 from PIL import Image
 import soundfile as sf
+from skimage.metrics import structural_similarity as ssim
 
 from django.shortcuts import render
 from django.core.files.storage import default_storage
@@ -294,49 +295,100 @@ def stegano_decode(request):
 def pengujian_file(request):
     context = {}
 
-    if request.method == "POST":
-        original_file = request.FILES.get("original")
-        recovered_file = request.FILES.get("recovered")
-        context["upload_info"] = [
-            {
-                "label": "Original",
-                "name": original_file.name,
-                "size": original_file.size,
-            },
-            {
-                "label": "Recovered",
-                "name": recovered_file.name,
-                "size": recovered_file.size,
-            },
-        ]
-        orig_bytes = original_file.read()
-        recv_bytes = recovered_file.read()
+    if request.method != "POST":
+        return render(request, "pengujian.html", context)
 
-        min_len = min(len(orig_bytes), len(recv_bytes))
-        orig_bytes = orig_bytes[:min_len]
-        recv_bytes = recv_bytes[:min_len]
+    audio_orig = request.FILES["audio_original"]
+    audio_stego = request.FILES["audio_stego"]
+    message_orig = request.FILES["message_original"]
+    message_recv = request.FILES["message_recovered"]
 
-        orig_arr = np.frombuffer(orig_bytes, dtype=np.uint8)
-        recv_arr = np.frombuffer(recv_bytes, dtype=np.uint8)
+    context["upload_info"] = [
+        {"label": "Audio Original", "name": audio_orig.name, "size": audio_orig.size},
+        {"label": "Audio Stego", "name": audio_stego.name, "size": audio_stego.size},
+        {"label": "Message Original", "name": message_orig.name, "size": message_orig.size},
+        {"label": "Message Recovered", "name": message_recv.name, "size": message_recv.size},
+    ]
+    
+    BLOCK_SIZE = 44100
+    MAX_SECONDS = 30
+    max_blocks = MAX_SECONDS
 
-        mse = calculate_mse(orig_arr, recv_arr)
-        psnr = calculate_psnr(mse)
-        ber = calculate_ber(orig_bytes, recv_bytes)
+    mse_sum = 0.0
+    sample_count = 0
+    ssim_values = []
 
-        context["metrics"] = {
-            "mse": mse,
-            "psnr": psnr,
-            "ber": ber,
+    with sf.SoundFile(audio_orig) as f_o, sf.SoundFile(audio_stego) as f_s:
+
+        if f_o.samplerate != f_s.samplerate:
+            raise ValueError("Sample rate audio tidak sama")
+
+        for _ in range(max_blocks):
+            block_o = f_o.read(BLOCK_SIZE, dtype="float32")
+            block_s = f_s.read(BLOCK_SIZE, dtype="float32")
+
+            if len(block_o) == 0 or len(block_s) == 0:
+                break
+
+            if block_o.ndim > 1:
+                block_o = block_o.mean(axis=1)
+            if block_s.ndim > 1:
+                block_s = block_s.mean(axis=1)
+
+            min_len = min(len(block_o), len(block_s))
+            block_o = block_o[:min_len]
+            block_s = block_s[:min_len]
+
+            diff = block_o - block_s
+            mse_sum += np.sum(diff ** 2)
+            sample_count += min_len
+
+            if min_len > 100:
+                ssim_values.append(
+                    ssim(block_o, block_s, data_range=block_o.max() - block_o.min())
+                )
+
+    mse_audio = mse_sum / sample_count if sample_count else 0.0
+    psnr_audio = calculate_psnr(mse_audio, 1.0)
+    ssim_audio = float(np.mean(ssim_values)) if ssim_values else 1.0
+
+    msg_o = message_orig.read()
+    msg_r = message_recv.read()
+
+    min_len_msg = min(len(msg_o), len(msg_r))
+    msg_o = msg_o[:min_len_msg]
+    msg_r = msg_r[:min_len_msg]
+
+    ber_message = calculate_ber(msg_o, msg_r)
+
+    context["metrics"] = {
+        "audio": {
+            "mse": mse_audio,
+            "psnr": psnr_audio,
+            "ssim": ssim_audio,
+        },
+        "message": {
+            "ber": ber_message,
         }
+    }
 
     return render(request, "pengujian.html", context)
-
 
 def calculate_mse(a, b):
     return np.mean((a - b) ** 2)
 
-def calculate_psnr(mse, max_pixel=255.0):
-    return float("inf") if mse == 0 else 20 * math.log10(max_pixel / math.sqrt(mse))
+
+def calculate_psnr(mse, max_val):
+    if mse == 0:
+        return float("inf")
+    return 20 * math.log10(max_val / math.sqrt(mse))
+
+
+def calculate_ssim_audio(a, b):
+    return ssim(a, b, data_range=b.max() - b.min())
+
 
 def calculate_ber(a, b):
-    return sum(bin(x ^ y).count("1") for x, y in zip(a, b)) / (len(a) * 8)
+    total_bits = len(a) * 8
+    error_bits = sum(bin(x ^ y).count("1") for x, y in zip(a, b))
+    return error_bits / total_bits

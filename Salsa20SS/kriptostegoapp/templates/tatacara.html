@@ -1,0 +1,23 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Penyisipan DSSS</title>
+    <link rel="stylesheet" href="{% static 'interface.css' %}">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="brand">Kripto-Stegano</div>
+    <ul>
+        <li><a href="{% url 'home' %}">Beranda</a></li>
+        <li><a href="{% url 'encrypt' %}">Enkripsi</a></li>
+        <li><a href="{% url 'encode' %}" class="active">Penyisipan</a></li>
+        <li><a href="{% url 'test' %}">Pengujian</a></li>
+        <li><a href="#">Tata Cara</a></li>
+    </ul>
+</nav>
+
+</body>
+</html>

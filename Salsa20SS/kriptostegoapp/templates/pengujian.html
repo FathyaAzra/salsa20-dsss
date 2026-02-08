@@ -9,6 +9,7 @@
 <body>
 
 <nav class="navbar">
+    <div></div>
     <ul>
         <li><a href="{% url 'home' %}">Beranda</a></li>
         <li><a href="{% url 'test' %}" class="active">Pengujian</a></li>
@@ -23,36 +24,55 @@
         {% csrf_token %}
         <div class="main">
             <div class="left-panel">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="mode" value="audio">
 
-                <div class="upload-box" id="audioOrigZone">
-                    <strong>Click or Drag</strong>
-                    <span>Audio Original</span>
-                    <input type="file" name="audio_original" id="audioOrigInput" hidden required>
-                </div>
+                    <h3>Uji Audio</h3>
 
-                <div class="upload-box" id="audioStegoZone" style="margin-top:15px">
-                    <strong>Click or Drag</strong>
-                    <span>Audio Stego</span>
-                    <input type="file" name="audio_stego" id="audioStegoInput" hidden required>
-                </div>
+                    <div class="upload-box" id="audioOrigZone">
+                        <strong>Click or Drag</strong>
+                        <span>Unggah audio asli</span>
+                        <input type="file" name="audio_original" id="audioOrigInput" hidden required>
+                    </div>
 
-                <div class="upload-box" id="msgOrigZone" style="margin-top:15px">
-                    <strong>Click or Drag</strong>
-                    <span>Pesan Asli</span>
-                    <input type="file" name="message_original" id="msgOrigInput" hidden required>
-                </div>
+                    <div class="upload-box" id="audioStegoZone" style="margin-top:15px">
+                        <strong>Click or Drag</strong>
+                        <span>Unggah audio stego</span>
+                        <input type="file" name="audio_stego" id="audioStegoInput" hidden required>
+                    </div>
 
-                <div class="upload-box" id="msgRecvZone" style="margin-top:15px">
-                    <strong>Click or Drag</strong>
-                    <span>Pesan Hasil</span>
-                    <input type="file" name="message_recovered" id="msgRecvInput" hidden required>
-                </div>
+                    <div class="controls" style="margin-top:20px">
+                        <button type="submit" class="btn primary">
+                            Uji Audio
+                        </button>
+                    </div>
+                </form>
 
-                <div class="controls" style="margin-top:30px">
-                    <button type="submit" class="btn primary">
-                        Mulai Pengujian
-                    </button>
-                </div>
+                <form method="POST" enctype="multipart/form-data" style="margin-top:35px">
+                    {% csrf_token %}
+                    <input type="hidden" name="mode" value="message">
+
+                    <h3>Uji Pesan</h3>
+
+                    <div class="upload-box" id="msgOrigZone">
+                        <strong>Click or Drag</strong>
+                        <span>Unggah pesan asli</span>
+                        <input type="file" name="message_original" id="msgOrigInput" hidden required>
+                    </div>
+
+                    <div class="upload-box" id="msgRecvZone" style="margin-top:15px">
+                        <strong>Click or Drag</strong>
+                        <span>Unggah pesan recovered</span>
+                        <input type="file" name="message_recovered" id="msgRecvInput" hidden required>
+                    </div>
+
+                    <div class="controls" style="margin-top:20px">
+                        <button type="submit" class="btn primary">
+                            Uji Pesan
+                        </button>
+                    </div>
+                </form>
 
             </div>
 

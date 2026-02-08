@@ -3,7 +3,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Ekstraksi DSSS</title>
+    <title>Ekstraksi SS</title>
     <link rel="stylesheet" href="{% static 'interface.css' %}">
 </head>
 <body>
@@ -20,7 +20,7 @@
 </nav>
 
 <div class="container">
-    <h1>Ekstraksi DSSS</h1>
+    <h1>Ekstraksi Spread Spectrum</h1>
 
     <form method="POST" enctype="multipart/form-data">
         {% csrf_token %}
@@ -37,7 +37,7 @@
                         hidden required>
                 </div>
 
-                <div class="format">Format: WAV / FLAC</div>
+                <div class="format">Format: FLAC</div>
 
                 <div class="field" style="margin-top:20px">
                     <label>Password :</label><br>
@@ -47,55 +47,68 @@
                 </div>
 
                 <div class="controls">
-                    <button type="submit" class="btn primary" id="decodeBtn">
-                        Mulai Decode
-                    </button>
-                    <span class="progress">Progres : 0%</span>
+                    <button type="submit" class="btn primary" id="decodeBtn">Mulai Decode</button>
                 </div>
 
                 {% if file %}
                 <div class="downloads">
                     <a href="{{ file }}" download class="btn">
-                        Download Recovered BIN
-                    </a>
-                    <a href="{% url 'decrypt' %}" class="btn primary">
-                        Lanjut Dekripsi
+                        Download Recovered
                     </a>
                 </div>
                 {% endif %}
             </div>
 
             <div class="right-panel">
+                {% if file %}
+                <div class="result-area">
+                    <h3>Hasil Ekstraksi</h3>
+                    <table class="metrics-table">
+                        <tr>
+                            <td>Status</td>
+                            <td><b>Ekstraksi berhasil</b></td>
+                        </tr>
 
-            {% if file %}
-            <div class="result-area">
-                <h3>Hasil Ekstraksi</h3>
-                <table class="metrics-table">
-                    <tr>
-                        <td>Ukuran chip (L)</td>
-                        <td>{{ metrics.L }}</td>
-                    </tr>
-                    <tr>
-                        <td>Repeat</td>
-                        <td>{{ metrics.repeat_n }}</td>
-                    </tr>
-                    <tr>
-                        <td>Ukuran file hasil</td>
-                        <td>{{ metrics.recovered_size }} byte</td>
-                    </tr>
-                    <tr>
-                        <td>Waktu Ekstraksi</td>
-                        <td>{{ metrics.execution_time|floatformat:4 }} detik</td>
-                    </tr>
-                    <tr>
-                        <td>Status</td>
-                        <td><b>Ekstraksi berhasil</b></td>
-                    </tr>
-                </table>
+                        <tr>
+                            <td>Nama audio stego</td>
+                            <td>{{ stego_name }}</td>
+                        </tr>
+                        <tr>
+                            <td>Ukuran audio stego</td>
+                            <td>{{ stego_size }} byte</td>
+                        </tr>
+
+                        <tr>
+                            <td>Nama pesan recovered</td>
+                            <td>{{ recovered_name }}</td>
+                        </tr>
+                        <tr>
+                            <td>Ukuran pesan recovered</td>
+                            <td>{{ recovered_size }} byte</td>
+                        </tr>
+
+                        <tr>
+                            <td>Ukuran chip (L)</td>
+                            <td>{{ L }}</td>
+                        </tr>
+                        <tr>
+                            <td>Repeat</td>
+                            <td>{{ repeat_n }}</td>
+                        </tr>
+
+                        <tr>
+                            <td>Waktu ekstraksi</td>
+                            <td>{{ execution_time|floatformat:4 }} detik</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="next">
+                    <a href="{% url 'decrypt' %}" class="btn primary">
+                            Tahap Berikutnya
+                    </a>
+                </div>
+                {% endif %}
             </div>
-            {% endif %}
-
-
         </div>
     </form>
 </div>

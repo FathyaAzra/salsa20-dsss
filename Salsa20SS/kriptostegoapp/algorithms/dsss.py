@@ -16,7 +16,6 @@ def dsss_encode(
     alpha: float,
     L: int,
     repeat_n: int = 1,
-    progress_cb=None,
 ):
     pn = prng(key, L)
     bits = np.unpackbits(
@@ -42,8 +41,6 @@ def dsss_encode(
             blk[:, 0] += alpha * (1 if bit else -1) * pn
             o.write(blk)
 
-            if progress_cb:
-                progress_cb(int((idx + 1) / total_bits * 100))
         for blk in i.blocks(4096, dtype="float32"):
             o.write(blk)
 
@@ -54,7 +51,6 @@ def dsss_decode(
     key: str,
     L: int,
     repeat_n: int = 1,
-    progress_cb=None,
 ):
     pn = prng(key, L)
 
@@ -77,10 +73,6 @@ def dsss_decode(
 
             if payload_len and len(bits) >= total_needed:
                 break
-
-            if progress_cb and total_needed:
-                progress_cb(int(len(bits) / total_needed * 100))
-
     payload_bits = np.array(bits[32 * repeat_n:], dtype=np.uint8)
     payload_bits = payload_bits[: len(payload_bits) - (len(payload_bits) % repeat_n)]
     data_bits = (payload_bits.reshape(-1, repeat_n).sum(axis=1) > (repeat_n // 2))

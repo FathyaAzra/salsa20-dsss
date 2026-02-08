@@ -3,7 +3,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Penyisipan DSSS</title>
+    <title>Penyisipan SS</title>
     <link rel="stylesheet" href="{% static 'interface.css' %}">
 </head>
 <body>
@@ -20,24 +20,22 @@
 </nav>
 
 <div class="container">
-    <h1>Penyisipan DSSS</h1>
+    <h1>Penyisipan Spread Spectrum</h1>
 
     <form method="POST" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="main">
             <div class="left-panel">
                 <div class="upload-box" id="dropZone">
-                    <strong>Click or Drag file</strong>
-                    <span>Unggah file cipher (.bin)</span>
-                    <input type="file" id="fileInput" name="secret_file" accept=".bin" hidden required>
+                    <strong>Click or Drag</strong>
+                    <span>Unggah file cipher</span>
+                    <input type="file" id="fileInput" name="secret_file" hidden required>
                 </div>
-
-                <div class="format">Format: BIN</div>
-
+                
                 <div class="upload-box" id="audioDropZone" style="margin-top:20px">
-                    <strong>Click or Drag audio</strong>
-                    <span>Unggah file audio (.wav)</span>
-                    <input type="file" id="audioInput" name="audio_file" accept=".wav" hidden required>
+                    <strong>Click or Drag</strong>
+                    <span>Unggah audio asli</span>
+                    <input type="file" id="audioInput" name="audio_file" hidden required>
                 </div>
 
                 <div class="format">Format: WAV</div>
@@ -69,9 +67,9 @@
                         <tbody id="uploadTable">
                             {% for f in upload_info %}
                             <tr id="row-{{ f.label }}">
-                                <td>{{ f.label|upper }}</td>
-                                <td>{{ f.name }}</td>
-                                <td>{{ f.size }} byte</td>
+                                <td>{{ f.label|upper }}  </td>
+                                <td>{{ f.name }}  </td>
+                                <td>{{ f.size }} byte  </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -81,21 +79,73 @@
                 {% if file %}
                 <div class="result-area">
                     <h3>Hasil Penyisipan</h3>
-                    <div class="details">
-                        <p>Nama pesan : {{ message_name }}</p>
-                        <p>Ukuran pesan : {{ message_size }}</p>
-                        <br>
-                        <p>Nama audio : {{ audio_name }}</p>
-                        <p>Bitrate : {{ bitrate }}</p>
-                        <p>Channel : {{ channel }}</p>
-                        <br>
-                        <p>Kapasitas : {{ capacity }}</p>
-                        <p>Kapasitas dibutuhkan : {{ required_capacity }}</p>
-                        <p>Padding : {{ padding }}</p>
-                        <br>
-                        <p>Waktu Penyisipan : <b>{{ execution_time|floatformat:4 }} detik</b></p>
-                        <p>Status : <b>Penyisipan berhasil</b></p>
-                    </div>
+                    <table class="metrics-table">
+                        <tr>
+                            <td>Nama pesan  </td>
+                            <td>{{ message_name }}  </td>
+                        </tr>
+                        <tr>
+                            <td>Ukuran pesan  </td>
+                            <td>{{ message_size }} byte  </td>
+                        </tr>
+                        <tr>
+                            <td>Nama audio asli  </td>
+                            <td>{{ audio_name }}  </td>
+                        </tr>
+                        <tr>
+                            <td>Ukuran audio asli  </td>
+                            <td>{{ audio_size }} byte  </td>
+                        </tr>
+                        <tr>
+                            <td>Nama audio stego  </td>
+                            <td>{{ stego_name }}  </td>
+                        </tr>
+                        <tr>
+                            <td>Ukuran audio stego  </td>
+                            <td>{{ stego_size }} byte  </td>
+                        </tr>
+                        <tr>
+                            <td>Sample rate  </td>
+                            <td>{{ samplerate }}  </td>
+                        </tr>
+                        <tr>
+                            <td>Channel  </td>
+                            <td>{{ channel }}  </td>
+                        </tr>
+                        <tr>
+                            <td>Kapasitas  </td>
+                            <td>{{ capacity }}  </td>
+                        </tr>
+                        <tr>
+                            <td>Kapasitas dibutuhkan  </td>
+                            <td>{{ required_capacity }}  </td>
+                        </tr>
+                        <tr>
+                            <td>Padding  </td>
+                            <td>{{ padding }}  </td>
+                        </tr>
+                        <tr>
+                            <td>Ukuran chip (L)  </td>
+                            <td>{{ L }}  </td>
+                        </tr>
+                        <tr>
+                            <td>Repeat  </td>
+                            <td>{{ repeat_n }}  </td>
+                        </tr>
+                        <tr>
+                            <td>Alpha  </td>
+                            <td>{{ alpha }}  </td>
+                        </tr>
+                        <tr>
+                            <td>Waktu penyisipan  </td>
+                            <td>{{ execution_time|floatformat:4 }} detik  </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="next">
+                    <a href="{% url 'home' %}" class="btn primary">
+                        Kembali ke Beranda
+                    </a>
                 </div>
                 {% endif %}
             </div>
@@ -169,9 +219,9 @@ function updateUploadInfo(label, file) {
     }
 
     row.innerHTML = `
-        <td>${label.toUpperCase()}</td>
-        <td>${file.name}</td>
-        <td>${formatBytes(file.size)}</td>
+        <td>${label.toUpperCase()}  </td>
+        <td>${file.name}  </td>
+        <td>${formatBytes(file.size)}  </td>
     `;
 }
 

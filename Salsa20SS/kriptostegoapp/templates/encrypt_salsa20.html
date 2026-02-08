@@ -20,15 +20,12 @@
 </nav>
 
 <div class="container">
-    <h1>Enkripsi File – Salsa20</h1>
+    <h1>Enkripsi Salsa20</h1>
 
     <form method="POST" enctype="multipart/form-data">
         {% csrf_token %}
-
         <div class="main">
-
             <div class="left-panel">
-
                 <div class="upload-box" id="dropZone">
                     <strong>Click or Drag file</strong>
                     <span>Unggah ilustrasi digital</span>
@@ -48,7 +45,6 @@
                     <a href="{{ metadata }}" download class="btn">Download Metadata</a>
                 </div>
                 {% endif %}
-
             </div>
 
             <div class="right-panel">
@@ -56,46 +52,62 @@
                 <div class="preview" id="preview">
                     <span>Preview gambar</span>
                 </div>
-                <div class="file-info" id="fileInfo"
-                    {% if not file %}style="display:none"{% endif %}>
-                    <p><b>Nama file:</b>
-                        <span id="infoName">
-                            {{ filename|default:"" }}
-                        </span>
-                    </p>
-                    <p><b>Ukuran file:</b>
-                        <span id="infoSize">
-                            {% if filesize %}{{ filesize }} byte{% endif %}
-                        </span>
-                    </p>
-                </div>
 
+                <div class="result-area" id="uploadInfo"
+                    {% if not upload_info %}style="display:none"{% endif %}>
+                    <h3>Informasi Upload</h3>
+                    <table class="metrics-table">
+                        <tbody id="uploadTable">
+                            {% for f in upload_info %}
+                            <tr id="row-{{ f.label|lower }}">
+                                <td>{{ f.label|upper }}  </td>
+                                <td>{{ f.name }}  </td>
+                                <td>{{ f.size }} byte  </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
 
                 {% if encrypted %}
                 <div class="result-area">
-                    <h3>Hasil</h3>
+                    <h3>Hasil Enkripsi</h3>
                     <table class="metrics-table">
                         <tr>
-                            <td>Persen terenkripsi (%)</td>
-                            <td>{{ metrics.encryption_percentage }}%</td>
+                            <td>Persentase ukuran (%)  </td>
+                            <td>{{ metrics.size_ratio }}%  </td>
                         </tr>
                         <tr>
-                            <td>Waktu Eksekusi</td>
-                            <td>{{ metrics.execution_time|floatformat:4 }} detik</td>
+                            <td>Nama file asli  </td>
+                            <td>{{ original_filename }}  </td>
                         </tr>
                         <tr>
-                            <td>Nama file cipher</td>
-                            <td>{{ cipher_filename }}</td>
+                            <td>Ukuran file asli  </td>
+                            <td>{{ original_filesize }} byte  </td>
                         </tr>
                         <tr>
-                            <td>Ukuran pesan cipher</td>
-                            <td>{{ cipher_filesize }} byte</td>
+                            <td>Nama file cipher  </td>
+                            <td>{{ cipher_filename }}  </td>
+                        </tr>
+                        <tr>
+                            <td>Ukuran file cipher  </td>
+                            <td>{{ cipher_filesize }} byte  </td>
+                        </tr>
+                        <tr>
+                            <td>Ukuran kunci  </td>
+                            <td>{{ key_filesize }} byte  </td>
+                        </tr>
+                        <tr>
+                            <td>Ukuran metadata  </td>
+                            <td>{{ meta_filesize }} byte  </td>
+                        </tr>
+                        <tr>
+                            <td>Waktu Enkripsi  </td>
+                            <td>{{ metrics.execution_time|floatformat:4 }} detik  </td>
                         </tr>
                     </table>
                 </div>
-                {% endif %}
 
-                {% if encrypted %}
                 <div class="next">
                     <a href="{% url 'encode' %}" class="btn primary">
                         Tahap Berikutnya
@@ -109,22 +121,14 @@
 </div>
 
 <script>
-function setupDropZone({
+function setupDrop({
     zoneId,
     inputId,
-    previewId,
-    infoBoxId,
-    infoNameId,
-    infoSizeId,
-    imageOnly = false
+    label,
+    allowedExt = null
 }) {
     const zone = document.getElementById(zoneId);
     const input = document.getElementById(inputId);
-    const preview = document.getElementById(previewId);
-
-    const infoBox = document.getElementById(infoBoxId);
-    const infoName = document.getElementById(infoNameId);
-    const infoSize = document.getElementById(infoSizeId);
 
     zone.onclick = () => input.click();
 
@@ -142,7 +146,7 @@ function setupDropZone({
         if (!e.dataTransfer.files.length) return;
 
         const file = e.dataTransfer.files[0];
-        if (!validateFile(file, imageOnly)) return;
+        if (!validateFile(file, allowedExt)) return;
 
         input.files = e.dataTransfer.files;
         handleFile(file);
@@ -152,7 +156,7 @@ function setupDropZone({
         if (!input.files.length) return;
 
         const file = input.files[0];
-        if (!validateFile(file, imageOnly)) {
+        if (!validateFile(file, allowedExt)) {
             input.value = '';
             return;
         }
@@ -161,48 +165,65 @@ function setupDropZone({
     };
 
     function handleFile(file) {
-        preview.innerHTML = '';
-
-        if (file.type.startsWith('image/')) {
-            const img = document.createElement('img');
-            img.src = URL.createObjectURL(file);
-            img.onload = () => URL.revokeObjectURL(img.src);
-            preview.appendChild(img);
-        } else {
-            preview.innerHTML = '<span>Preview tidak tersedia</span>';
-        }
-
-        infoName.textContent = file.name;
-        infoSize.textContent = formatBytes(file.size);
-        infoBox.style.display = 'block';
+        updateUploadInfo(label, file);
+        updatePreview(file);
     }
 }
 
-function validateFile(file, imageOnly) {
-    if (!imageOnly) return true;
+function validateFile(file, allowedExt) {
+    if (!allowedExt) return true;
 
-    if (!file.type.startsWith('image/')) {
-        alert('Pesan hanya boleh berupa file gambar!');
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!allowedExt.includes(ext)) {
+        alert(`Format tidak valid! Harus: ${allowedExt.join(', ')}`);
         return false;
     }
     return true;
 }
 
-function formatBytes(bytes) {
-    if (bytes === 0) return '0 byte';
-    const sizes = ['byte', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + sizes[i];
+function updateUploadInfo(label, file) {
+    const box = document.getElementById('uploadInfo');
+    const table = document.getElementById('uploadTable');
+
+    if (!box || !table) return;
+
+    box.style.display = 'block';
+
+    let row = document.getElementById(`row-${label}`);
+    if (!row) {
+        row = document.createElement('tr');
+        row.id = `row-${label}`;
+        table.appendChild(row);
+    }
+
+    row.innerHTML = `
+        <td>${label.toUpperCase()}  </td>
+        <td>${file.name}  </td>
+        <td>${file.size} byte  </td>
+    `;
 }
 
-setupDropZone({
+function updatePreview(file) {
+    const preview = document.getElementById('preview');
+    if (!preview) return;
+
+    preview.innerHTML = '';
+
+    if (file.type.startsWith('image/')) {
+        const img = new Image();
+        img.src = URL.createObjectURL(file);
+        img.onload = () => URL.revokeObjectURL(img.src);
+        preview.appendChild(img);
+    } else {
+        preview.innerHTML = '<span>Preview tidak tersedia</span>';
+    }
+}
+
+setupDrop({
     zoneId: 'dropZone',
     inputId: 'fileInput',
-    previewId: 'preview',
-    infoBoxId: 'fileInfo',
-    infoNameId: 'infoName',
-    infoSizeId: 'infoSize',
-    imageOnly: true
+    label: 'original',
+    allowedExt: ['png','jpg','jpeg']
 });
 </script>
 </body>

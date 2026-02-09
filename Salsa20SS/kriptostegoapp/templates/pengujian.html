@@ -118,7 +118,7 @@
                     <table class="metrics-table">
                         <tr>
                             <td>MSE</td>
-                            <td>{{ metrics.audio.mse|floatformat:6 }}</td>
+                            <td>{{ metrics.audio.mse|floatformat:10 }}</td>
                         </tr>
                         <tr>
                             <td>PSNR</td>
@@ -126,13 +126,13 @@
                                 {% if metrics.audio.psnr == inf %}
                                     ∞
                                 {% else %}
-                                    {{ metrics.audio.psnr|floatformat:4 }} dB
+                                    {{ metrics.audio.psnr|floatformat:10 }} dB
                                 {% endif %}
                             </td>
                         </tr>
                         <tr>
                             <td>SSIM</td>
-                            <td>{{ metrics.audio.ssim|floatformat:6 }}</td>
+                            <td>{{ metrics.audio.ssim|floatformat:10 }}</td>
                         </tr>
                     </table>
                 </div>
@@ -142,7 +142,7 @@
                     <table class="metrics-table">
                         <tr>
                             <td>BER</td>
-                            <td>{{ metrics.message.ber|floatformat:8 }}</td>
+                            <td>{{ metrics.message.ber|floatformat:10 }}</td>
                         </tr>
                     </table>
                 </div>

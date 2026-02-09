@@ -12,6 +12,10 @@ from django.conf import settings
 from .algorithms.salsa20 import encrypt_decrypt
 from .algorithms.dsss import dsss_encode, dsss_decode
 
+ALPHA = 0.01
+L = 512
+REPEAT_N = 3
+
 
 def home(request):
     return render(request, "home.html")
@@ -163,10 +167,6 @@ def stegano_encode(request):
         },
     ]
 
-    alpha = 0.01
-    L = 512
-    repeat_n = 3
-
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_audio:
         tmp_audio.write(audio_file.read())
         in_audio_path = tmp_audio.name
@@ -180,13 +180,8 @@ def stegano_encode(request):
         frames = len(audio)
 
     capacity = frames // L
-    required_capacity = (len(payload) * 8 + 32) * repeat_n
+    required_capacity = (len(payload) * 8 + 32) * REPEAT_N
     padding = max(0, capacity - required_capacity)
-
-    if required_capacity > capacity:
-        context["error"] = "Audio tidak cukup untuk menampung payload"
-        os.remove(in_audio_path)
-        return render(request, "encode_ss.html", context)
 
     start_time = time.time()
     dsss_encode(
@@ -194,9 +189,9 @@ def stegano_encode(request):
         out_audio=out_audio_path,
         payload=payload,
         key=password,
-        alpha=alpha,
+        alpha=ALPHA,
         L=L,
-        repeat_n=repeat_n,
+        repeat_n=REPEAT_N,
     )
     execution_time = time.time() - start_time
 
@@ -229,8 +224,8 @@ def stegano_encode(request):
         "padding": padding,
 
         "L": L,
-        "repeat_n": repeat_n,
-        "alpha": alpha,
+        "repeat_n": REPEAT_N,
+        "alpha": ALPHA,
 
         "execution_time": execution_time,
     })
@@ -249,16 +244,15 @@ def stegano_decode(request):
 
     stego_file = request.FILES.get("audio_file")
     password = request.POST.get("password") or "secret"
-    L = int(request.POST.get("L", 512))
-    repeat_n = int(request.POST.get("repeat", 3))
+
 
     if not stego_file:
         context["error"] = "File audio stego wajib diunggah"
         return render(request, "decode_ss.html", context)
 
     ext = os.path.splitext(stego_file.name)[1].lower()
-    if ext not in [".wav", ".flac"]:
-        context["error"] = "Format harus WAV atau FLAC"
+    if ext not in [".flac"]:
+        context["error"] = "Format harus FLAC"
         return render(request, "decode_ss.html", context)
 
     with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
@@ -273,7 +267,7 @@ def stegano_decode(request):
         out_file=out_path,
         key=password,
         L=L,
-        repeat_n=repeat_n,
+        repeat_n=REPEAT_N,
     )
     execution_time = time.time() - start_time
 
@@ -293,7 +287,7 @@ def stegano_decode(request):
         "recovered_size": recovered_size,
 
         "L": L,
-        "repeat_n": repeat_n,
+        "repeat_n": REPEAT_N,
         "execution_time": execution_time,
     })
 
@@ -326,7 +320,7 @@ def pengujian_file(request):
         ]
 
         BLOCK_SIZE = 44100
-        MAX_SECONDS = 30
+        MAX_SECONDS = 60
         max_blocks = MAX_SECONDS
 
         mse_sum = 0.0

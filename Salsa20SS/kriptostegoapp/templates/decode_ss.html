@@ -60,15 +60,25 @@
             </div>
 
             <div class="right-panel">
+                <div class="result-area" id="uploadInfo"
+                    {% if not upload_info %}style="display:none"{% endif %}>
+                    <h3>Informasi Upload</h3>
+                    <table class="metrics-table">
+                        <tbody id="uploadTable">
+                            {% for f in upload_info %}
+                            <tr id="row-{{ f.label }}">
+                                <td>{{ f.label|upper }}  </td>
+                                <td>{{ f.name }}  </td>
+                                <td>{{ f.size }} byte  </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
                 {% if file %}
                 <div class="result-area">
                     <h3>Hasil Ekstraksi</h3>
                     <table class="metrics-table">
-                        <tr>
-                            <td>Status</td>
-                            <td><b>Ekstraksi berhasil</b></td>
-                        </tr>
-
                         <tr>
                             <td>Nama audio stego</td>
                             <td>{{ stego_name }}</td>

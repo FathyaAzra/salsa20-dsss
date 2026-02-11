@@ -13,8 +13,8 @@ from .algorithms.salsa20 import encrypt_decrypt
 from .algorithms.dsss import dsss_encode, dsss_decode
 
 ALPHA = 0.01
-L = 512
-REPEAT_N = 3
+L = 1024
+REPEAT_N = 1
 
 
 def home(request):
@@ -85,7 +85,6 @@ def encrypt_file(request):
             "meta_filesize": len(json.dumps(metadata_data)),
             "metrics": {
                 "execution_time": exec_time,
-                "size_ratio": round((cipher_size / original_size) * 100, 2)
             }
         })
 
@@ -181,7 +180,7 @@ def stegano_encode(request):
 
     capacity = frames // L
     required_capacity = (len(payload) * 8 + 32) * REPEAT_N
-    padding = max(0, capacity - required_capacity)
+    padding = max(0, required_capacity - capacity)
 
     start_time = time.time()
     dsss_encode(

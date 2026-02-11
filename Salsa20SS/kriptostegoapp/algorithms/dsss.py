@@ -25,8 +25,6 @@ def dsss_encode(
     if repeat_n > 1:
         bits = np.repeat(bits, repeat_n)
 
-    total_bits = len(bits)
-
     with sf.SoundFile(in_audio) as i, sf.SoundFile(
         out_audio,
         mode="w",
@@ -34,7 +32,7 @@ def dsss_encode(
         channels=i.channels,
         format="FLAC",
     ) as o:
-        for idx, bit in enumerate(bits):
+        for bit in enumerate(bits):
             blk = i.read(L, dtype="float32")
             if len(blk) < L:
                 blk = np.pad(blk, ((0, L - len(blk)), (0, 0)))
@@ -59,7 +57,7 @@ def dsss_decode(
     total_needed = None
 
     with sf.SoundFile(stego_audio) as f:
-        for idx, blk in enumerate(f.blocks(blocksize=L, dtype="float32")):
+        for blk in enumerate(f.blocks(blocksize=L, dtype="float32")):
             blk = blk[:, 0] if blk.ndim == 2 else blk
             blk = np.pad(blk, (0, max(0, L - len(blk))))
             bits.append(1 if np.dot(blk, pn) > 0 else 0)

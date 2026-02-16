@@ -12,13 +12,16 @@ from django.conf import settings
 from .algorithms.salsa20 import encrypt_decrypt
 from .algorithms.dsss import dsss_encode, dsss_decode
 
-ALPHA = 0.005
-L = 1024
-REPEAT_N = 1
+ALPHA = 0.01
+L = 512
+REPEAT_N = 3
 
 
 def home(request):
     return render(request, "home.html")
+
+def tata_cara(request):
+    return render(request, "tatacara.html")
 
 
 def encrypt_file(request):

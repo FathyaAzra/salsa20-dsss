@@ -1,5 +1,5 @@
 from django.urls import path
-from . views import encrypt_file, decrypt_file, stegano_decode, stegano_encode, home, pengujian_file
+from . views import encrypt_file, decrypt_file, stegano_decode, stegano_encode, home, pengujian_file, tata_cara
 
 urlpatterns = [
     path("encrypt/", encrypt_file, name="encrypt"),
@@ -7,5 +7,6 @@ urlpatterns = [
     path("encode/", stegano_encode, name="encode"),
     path("decode/", stegano_decode, name="decode"),
     path("test/", pengujian_file, name="test"),
+    path("tutorial/", tata_cara, name="tutorial"),
     path('', home, name='home')
 ]

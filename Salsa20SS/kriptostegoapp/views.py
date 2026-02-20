@@ -12,9 +12,9 @@ from django.conf import settings
 from .algorithms.salsa20 import encrypt_decrypt
 from .algorithms.dsss import dsss_encode, dsss_decode
 
-ALPHA = 0.01
-L = 512
-REPEAT_N = 3
+ALPHA = 0.05
+L = 256
+REPEAT_N = 1
 
 
 def home(request):

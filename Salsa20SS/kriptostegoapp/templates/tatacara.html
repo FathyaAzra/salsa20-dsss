@@ -3,7 +3,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Penyisipan DSSS</title>
+    <title>Tutorial</title>
     <link rel="stylesheet" href="{% static 'interface.css' %}">
 </head>
 <body>
@@ -11,26 +11,26 @@
 <nav class="navbar">
     <div class="brand"></div>
     <ul>
-        <li><a href="{% url 'home' %}">Beranda</a></li>
-        <li><a href="{% url 'test' %}">Pengujian</a></li>
-        <li><a href="{% url 'tutorial' %}" class="active">Tata Cara</a></li>
+        <li><a href="{% url 'home' %}">Home</a></li>
+        <li><a href="{% url 'test' %}">Testing</a></li>
+        <li><a href="{% url 'tutorial' %}" class="active">Tutorial</a></li>
     </ul>
 </nav>
 
 <div class="container">
-    <h1>Tata Cara Penggunaan Sistem</h1>
+    <h1>Website Tutorial</h1>
 
     <form method="POST" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="main">
             <div class="left-panel">
-                <h3>Alur Pengirim Ilustrasi Digital</h3>
+                <h3>Sender Side</h3>
 
                 <iframe width="560" height="315" src="https://www.youtube.com/embed/5hU_S5g_n44?si=UK0fOkWPHCQrICZM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
             </div>
 
             <div class="right-panel">
-                <h3>Alur Penerima Ilustrasi Digital</h3>
+                <h3>Receiver Side</h3>
                 
                 <iframe width="560" height="315" src="https://www.youtube.com/embed/zABVh12WJAM?si=40N5LT6RxiaqCA1n" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
             </div>

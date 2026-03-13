@@ -3,7 +3,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Pengujian Hasil</title>
+    <title>Testing</title>
     <link rel="stylesheet" href="{% static 'interface.css' %}">
 </head>
 <body>
@@ -11,14 +11,14 @@
 <nav class="navbar">
     <div></div>
     <ul>
-        <li><a href="{% url 'home' %}">Beranda</a></li>
-        <li><a href="{% url 'test' %}" class="active">Pengujian</a></li>
-        <li><a href="#">Tata Cara</a></li>
+        <li><a href="{% url 'home' %}">Home</a></li>
+        <li><a href="{% url 'test' %}"  class="active">Testing</a></li>
+        <li><a href="{% url 'tutorial' %}">Tutorial</a></li>
     </ul>
 </nav>
 
 <div class="container">
-    <h1>Pengujian Hasil Enkripsi</h1>
+    <h1>Result of System Testing</h1>
 
     <form method="POST" enctype="multipart/form-data">
         {% csrf_token %}
@@ -28,23 +28,23 @@
                     {% csrf_token %}
                     <input type="hidden" name="mode" value="audio">
 
-                    <h3>Uji Audio</h3>
+                    <h3>Audio Testing</h3>
 
                     <div class="upload-box" id="audioOrigZone">
                         <strong>Click or Drag</strong>
-                        <span>Unggah audio asli</span>
+                        <span>Upload Original Audio</span>
                         <input type="file" name="audio_original" id="audioOrigInput" hidden required>
                     </div>
 
                     <div class="upload-box" id="audioStegoZone" style="margin-top:15px">
                         <strong>Click or Drag</strong>
-                        <span>Unggah audio stego</span>
+                        <span>Upload Stego Audio</span>
                         <input type="file" name="audio_stego" id="audioStegoInput" hidden required>
                     </div>
 
                     <div class="controls" style="margin-top:20px">
                         <button type="submit" class="btn primary">
-                            Uji Audio
+                            Test Audio
                         </button>
                     </div>
                 </form>
@@ -53,23 +53,23 @@
                     {% csrf_token %}
                     <input type="hidden" name="mode" value="message">
 
-                    <h3>Uji Pesan</h3>
+                    <h3>Message Testing</h3>
 
                     <div class="upload-box" id="msgOrigZone">
                         <strong>Click or Drag</strong>
-                        <span>Unggah pesan asli</span>
+                        <span>Upload Original Message</span>
                         <input type="file" name="message_original" id="msgOrigInput" hidden required>
                     </div>
 
                     <div class="upload-box" id="msgRecvZone" style="margin-top:15px">
                         <strong>Click or Drag</strong>
-                        <span>Unggah pesan recovered</span>
+                        <span>Upload Recovered Message</span>
                         <input type="file" name="message_recovered" id="msgRecvInput" hidden required>
                     </div>
 
                     <div class="controls" style="margin-top:20px">
                         <button type="submit" class="btn primary">
-                            Uji Pesan
+                            Test Message
                         </button>
                     </div>
                 </form>
@@ -80,16 +80,16 @@
                 <div class="preview-grid">
 
                     <div class="preview-box">
-                        <h4>Pesan Asli</h4>
+                        <h4>Original Message</h4>
                         <div class="preview" id="preview-message_original">
-                            <span>Tidak ada preview</span>
+                            <span>No Preview</span>
                         </div>
                     </div>
 
                     <div class="preview-box">
-                        <h4>Pesan Hasil</h4>
+                        <h4>Recovered Message</h4>
                         <div class="preview" id="preview-message_recovered">
-                            <span>Tidak ada preview</span>
+                            <span>No Preview</span>
                         </div>
                     </div>
 

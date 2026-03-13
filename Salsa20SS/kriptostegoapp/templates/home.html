@@ -3,7 +3,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Beranda</title>
+    <title>Home</title>
     <link rel="stylesheet" href="{% static 'interface.css' %}">
 </head>
 <body>
@@ -11,25 +11,25 @@
 <nav class="navbar">
     <div></div>
     <ul>
-        <li><a href="{% url 'home' %}"  class="active">Beranda</a></li>
-        <li><a href="{% url 'test' %}">Pengujian</a></li>
-        <li><a href="{% url 'tutorial' %}">Tata Cara</a></li>
+        <li><a href="{% url 'home' %}"  class="active">Home</a></li>
+        <li><a href="{% url 'test' %}">Testing</a></li>
+        <li><a href="{% url 'tutorial' %}">Tutorial</a></li>
     </ul>
 </nav>
 
 <div class="container home">
     <div class="home-title">
         <h1>
-            Integrasi Algoritma Kriptografi Salsa20 dan
-            Steganografi Spread Spectrum Audio untuk
-            Pengamanan Ilustrasi Digital
+            Integration of Salsa20 Cryptography and 
+            Spread Spectrum Audio Stegagography Algorithm 
+            for Digital Illustration
         </h1>
     </div>
 
     <div class="home-actions">
         <div class="action-buttons">
-            <a href="{% url 'encrypt' %}" class="btn big">Pengirim</a>
-            <a href="{% url 'decode' %}" class="btn big">Penerima</a>
+            <a href="{% url 'encrypt' %}" class="btn big">Sender</a>
+            <a href="{% url 'decode' %}" class="btn big">Receiver</a>
         </div>
     </div>
 </div>

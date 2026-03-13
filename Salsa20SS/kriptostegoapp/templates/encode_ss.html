@@ -3,7 +3,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Penyisipan SS</title>
+    <title>SS Embedding</title>
     <link rel="stylesheet" href="{% static 'interface.css' %}">
 </head>
 <body>
@@ -11,16 +11,16 @@
 <nav class="navbar">
     <div></div>
     <ul>
-        <li><a href="{% url 'home' %}">Beranda</a></li>
-        <li><a href="{% url 'encrypt' %}">Enkripsi</a></li>
-        <li><a href="{% url 'encode' %}" class="active">Penyisipan</a></li>
-        <li><a href="{% url 'test' %}">Pengujian</a></li>
-        <li><a href="#">Tata Cara</a></li>
+        <li><a href="{% url 'home' %}">Home</a></li>
+        <li><a href="{% url 'encrypt' %}">Encryption</a></li>
+        <li><a href="{% url 'encode' %}"  class="active">Embedding</a></li>
+        <li><a href="{% url 'test' %}">Testing</a></li>
+        <li><a href="{% url 'tutorial' %}">Tutorial</a></li>
     </ul>
 </nav>
 
 <div class="container">
-    <h1>Penyisipan Spread Spectrum</h1>
+    <h1>Spread Spectrum Embedding</h1>
 
     <form method="POST" enctype="multipart/form-data">
         {% csrf_token %}
@@ -28,13 +28,13 @@
             <div class="left-panel">
                 <div class="upload-box" id="dropZone">
                     <strong>Click or Drag</strong>
-                    <span>Unggah file cipher</span>
+                    <span>Upload Cipher File</span>
                     <input type="file" id="fileInput" name="secret_file" hidden required>
                 </div>
                 
                 <div class="upload-box" id="audioDropZone" style="margin-top:20px">
                     <strong>Click or Drag</strong>
-                    <span>Unggah audio asli</span>
+                    <span>Upload Original Audio</span>
                     <input type="file" id="audioInput" name="audio_file" hidden required>
                 </div>
 
@@ -46,7 +46,7 @@
                 </div>
 
                 <div class="controls">
-                    <button type="submit" class="btn primary">Mulai Penyisipan</button>
+                    <button type="submit" class="btn primary">Start</button>
                 </div>
 
                 {% if file %}
@@ -62,7 +62,7 @@
             <div class="right-panel">
                 <div class="result-area" id="uploadInfo"
                     {% if not upload_info %}style="display:none"{% endif %}>
-                    <h3>Informasi Upload</h3>
+                    <h3>Upload Information</h3>
                     <table class="metrics-table">
                         <tbody id="uploadTable">
                             {% for f in upload_info %}
@@ -78,30 +78,30 @@
 
                 {% if file %}
                 <div class="result-area">
-                    <h3>Hasil Penyisipan</h3>
+                    <h3>Embedding Result</h3>
                     <table class="metrics-table">
                         <tr>
-                            <td>Nama pesan  </td>
+                            <td>Message Name</td>
                             <td>{{ message_name }}  </td>
                         </tr>
                         <tr>
-                            <td>Ukuran pesan  </td>
+                            <td>Message Size</td>
                             <td>{{ message_size }} byte  </td>
                         </tr>
                         <tr>
-                            <td>Nama audio asli  </td>
+                            <td>Original Audio Name</td>
                             <td>{{ audio_name }}  </td>
                         </tr>
                         <tr>
-                            <td>Ukuran audio asli  </td>
+                            <td>Original Audio Size</td>
                             <td>{{ audio_size }} byte  </td>
                         </tr>
                         <tr>
-                            <td>Nama audio stego  </td>
+                            <td>Stego Audio Name</td>
                             <td>{{ stego_name }}  </td>
                         </tr>
                         <tr>
-                            <td>Ukuran audio stego  </td>
+                            <td>Stego Audio Size</td>
                             <td>{{ stego_size }} byte  </td>
                         </tr>
                         <tr>
@@ -113,11 +113,11 @@
                             <td>{{ channel }}  </td>
                         </tr>
                         <tr>
-                            <td>Kapasitas  </td>
+                            <td>Capacity </td>
                             <td>{{ capacity }}  </td>
                         </tr>
                         <tr>
-                            <td>Kapasitas dibutuhkan  </td>
+                            <td>Required Capacity</td>
                             <td>{{ required_capacity }}  </td>
                         </tr>
                         <tr>
@@ -125,7 +125,7 @@
                             <td>{{ padding }}  </td>
                         </tr>
                         <tr>
-                            <td>Ukuran chip (L)  </td>
+                            <td>Chip Size (L)  </td>
                             <td>{{ L }}  </td>
                         </tr>
                         <tr>
@@ -137,14 +137,14 @@
                             <td>{{ alpha }}  </td>
                         </tr>
                         <tr>
-                            <td>Waktu penyisipan  </td>
-                            <td>{{ execution_time|floatformat:4 }} detik  </td>
+                            <td>Execution Time</td>
+                            <td>{{ execution_time|floatformat:4 }} s  </td>
                         </tr>
                     </table>
                 </div>
                 <div class="next">
                     <a href="{% url 'home' %}" class="btn primary">
-                        Kembali ke Beranda
+                        Back to Home
                     </a>
                 </div>
                 {% endif %}

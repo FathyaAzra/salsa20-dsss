@@ -29,10 +29,8 @@
                 <div class="upload-box" id="dropZone">
                     <strong>Click or Drag file</strong>
                     <span>Upload Digital Illustration</span>
-                    <input type="file" id="fileInput" name="file" hidden required>
+                    <input type="file" id="fileInput" name="file" accept="image/*" hidden required>
                 </div>
-
-                <div class="format">Format: PNG, JPG, JPEG</div>
 
                 <div class="controls">
                     <button type="submit" class="btn primary">Start</button>
@@ -167,8 +165,13 @@ function setupDrop({
 }
 
 function validateFile(file, allowedExt) {
-    if (!allowedExt) return true;
-
+    if (!allowedExt) {
+        if (!file.type.startsWith('image/')) {
+            alert("File harus berupa gambar!");
+            return false;
+        }
+        return true;
+    }
     const ext = file.name.split('.').pop().toLowerCase();
     if (!allowedExt.includes(ext)) {
         alert(`Format tidak valid! Harus: ${allowedExt.join(', ')}`);
@@ -219,7 +222,7 @@ setupDrop({
     zoneId: 'dropZone',
     inputId: 'fileInput',
     label: 'original',
-    allowedExt: ['png','jpg','jpeg']
+    allowedExt: null
 });
 </script>
 </body>

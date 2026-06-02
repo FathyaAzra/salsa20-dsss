@@ -1,6 +1,5 @@
 import os, json, time, math, tempfile
 import numpy as np
-from PIL import Image
 import soundfile as sf
 from skimage.metrics import structural_similarity as ssim
 
